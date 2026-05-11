@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
 import Link from 'next/link';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, useScroll, useTransform, AnimatePresence, Variants } from 'framer-motion';
 import { Music, AudioWaveform, MicVocal, AudioLines, Ear, Infinity, Play, Square, ArrowRight } from 'lucide-react';
 import { useAudio } from '@/context/AudioContext';
 import { useRouter } from 'next/navigation';
@@ -33,7 +33,7 @@ export default function Home() {
     { title: "Complete Audio", icon: <Infinity size={24} strokeWidth={1.5} />, desc: "End-to-end audio post-production handling every sonic element of your project." },
   ];
 
-  const blurReveal = {
+  const blurReveal: Variants = {
     hidden: { opacity: 0, y: 30, filter: "blur(15px)" },
     visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 1.2, ease: [0.33, 1, 0.68, 1] } }
   };

@@ -1,12 +1,12 @@
 'use client';
 import { Play, Pause } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import { useAudio } from '@/context/AudioContext';
 
 export default function TrackList({ tracks }: { tracks: any[] }) {
   const { currentTrackUrl, isPlaying, playTrack, togglePlay } = useAudio();
 
-  const blurReveal = {
+  const blurReveal: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.33, 1, 0.68, 1] } }
   };
