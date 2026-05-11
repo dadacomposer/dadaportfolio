@@ -19,6 +19,7 @@ interface AudioContextType {
   togglePlay: () => void;
   nextTrack: () => void;
   prevTrack: () => void;
+  pauseAudio: () => void;
   seek: (time: number) => void;
   analyzerData: number[];
   firstTrack: any | null;
@@ -167,7 +168,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       if (audioContextRef.current?.state === 'suspended') audioContextRef.current.resume();
     }
   };
-
   const togglePlay = () => {
     if (!audioRef.current) return;
     if (!currentTrackUrl && firstTrack) {
@@ -181,6 +181,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       audioRef.current.play();
       setIsPlaying(true);
       if (audioContextRef.current?.state === 'suspended') audioContextRef.current.resume();
+    }
+  };
+
+  const pauseAudio = () => {
+    if (audioRef.current && isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
     }
   };
 

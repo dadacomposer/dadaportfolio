@@ -1,7 +1,8 @@
 'use client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { X, ChevronLeft, ChevronRight, ExternalLink, Play, Pause, Maximize, Volume2, VolumeX } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useAudio } from '@/context/AudioContext';
 
 interface Project {
   _id: string;
@@ -23,17 +24,45 @@ interface Props {
 
 export default function ProjectIslandModal({ isOpen, projects, selectedIndex, onClose, onChangeIndex }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  
+  const { isPlaying: isMusicPlaying, pauseAudio } = useAudio();
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const controlsTimeout = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return;
       if (e.key === 'Escape') onClose();
       if (e.key === 'ArrowLeft') handlePrev();
       if (e.key === 'ArrowRight') handleNext();
+      if (e.key === ' ') {
+        e.preventDefault();
+        toggleVideoPlay();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, selectedIndex, projects.length]);
+
+  // Sync: If music starts playing, pause video
+  useEffect(() => {
+    if (isMusicPlaying && isVideoPlaying && videoRef.current) {
+      videoRef.current.pause();
+      setIsVideoPlaying(false);
+    }
+  }, [isMusicPlaying]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsVideoPlaying(true);
+      // Auto-pause music when modal opens with a video
+      pauseAudio();
+    } else {
+      setIsVideoPlaying(false);
+    }
+  }, [isOpen]);
 
   if (!isOpen || !projects[selectedIndex]) return null;
 
@@ -42,11 +71,60 @@ export default function ProjectIslandModal({ isOpen, projects, selectedIndex, on
   const handlePrev = () => {
     if (selectedIndex > 0) onChangeIndex(selectedIndex - 1);
     else onChangeIndex(projects.length - 1);
+    resetVideoState();
   };
 
   const handleNext = () => {
     if (selectedIndex < projects.length - 1) onChangeIndex(selectedIndex + 1);
     else onChangeIndex(0);
+    resetVideoState();
+  };
+
+  const resetVideoState = () => {
+    setIsVideoPlaying(true);
+    setVideoProgress(0);
+    pauseAudio();
+  };
+
+  const toggleVideoPlay = () => {
+    if (videoRef.current) {
+      if (isVideoPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+        pauseAudio(); // Ensure music stops if video starts
+      }
+      setIsVideoPlaying(!isVideoPlaying);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      const p = (videoRef.current.currentTime / videoRef.current.duration) * 100;
+      setVideoProgress(p);
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (videoRef.current) {
+      const time = (parseFloat(e.target.value) / 100) * videoRef.current.duration;
+      videoRef.current.currentTime = time;
+      setVideoProgress(parseFloat(e.target.value));
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (videoRef.current) {
+      if (videoRef.current.requestFullscreen) videoRef.current.requestFullscreen();
+    }
+  };
+
+  const handleMouseMove = () => {
+    setShowControls(true);
+    if (controlsTimeout.current) clearTimeout(controlsTimeout.current);
+    controlsTimeout.current = setTimeout(() => {
+      if (isVideoPlaying) setShowControls(false);
+    }, 3000);
   };
 
   return (
@@ -74,66 +152,120 @@ export default function ProjectIslandModal({ isOpen, projects, selectedIndex, on
 
           {/* Island Modal */}
           <motion.div 
-            className="relative w-full max-w-6xl aspect-video bg-anthracite border border-white/10 rounded-2xl overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.8)] z-[110]"
+            className="relative w-full max-w-6xl aspect-video bg-black border border-white/10 rounded-2xl overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.8)] z-[110]"
             initial={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(20px)" }}
             animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
             exit={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(20px)" }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            onMouseMove={handleMouseMove}
           >
             {/* Main Video Player */}
-            <div className="absolute inset-0 bg-black">
+            <div className="absolute inset-0 bg-black group" onClick={toggleVideoPlay}>
               <video 
                 key={project.videoUrl}
                 ref={videoRef}
                 src={project.videoUrl}
-                controls
                 autoPlay
-                className="w-full h-full object-contain"
+                muted={isMuted}
+                onTimeUpdate={handleTimeUpdate}
+                onPlay={() => { setIsVideoPlaying(true); pauseAudio(); }}
+                onPause={() => setIsVideoPlaying(false)}
+                className="w-full h-full object-contain cursor-pointer"
               />
             </div>
 
-            {/* Overlay Info (Bottom) */}
-            <div className="absolute bottom-0 left-0 w-full p-8 bg-gradient-to-t from-deepblack via-deepblack/80 to-transparent pointer-events-none">
-              <div className="max-w-4xl">
-                <motion.div
-                  key={project._id}
+            {/* Custom Controls Overlay */}
+            <AnimatePresence>
+              {showControls && (
+                <motion.div 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  className="absolute bottom-0 left-0 w-full p-6 md:p-10 bg-gradient-to-t from-black via-black/60 to-transparent z-40"
                 >
-                  <p className="text-[10px] font-light tracking-[0.4em] uppercase text-accent mb-2">{project.category} / {project.year}</p>
-                  <h3 className="text-3xl md:text-5xl font-light tracking-tight text-white mb-4">{project.title}</h3>
-                  <div className="flex flex-wrap items-center gap-6 pointer-events-auto">
+                  {/* Progress Bar */}
+                  <div className="relative w-full h-1 bg-white/10 rounded-full mb-8 group/progress cursor-pointer">
+                    <div 
+                      className="absolute h-full bg-accent rounded-full" 
+                      style={{ width: `${videoProgress}%` }}
+                    />
+                    <input 
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={videoProgress}
+                      onChange={handleSeek}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
                     <div className="flex flex-col">
-                      <span className="text-[8px] uppercase tracking-widest text-gray-500 mb-1">Role</span>
-                      <span className="text-xs text-white font-light tracking-wide">{project.role}</span>
+                      <p className="text-[10px] font-light tracking-[0.4em] uppercase text-accent mb-2">{project.category} / {project.year}</p>
+                      <h3 className="text-2xl md:text-4xl font-light tracking-tight text-white mb-4">{project.title}</h3>
+                      <div className="flex items-center gap-6">
+                        <div className="flex flex-col">
+                          <span className="text-[8px] uppercase tracking-widest text-gray-500 mb-1">Role</span>
+                          <span className="text-xs text-white font-light tracking-wide">{project.role}</span>
+                        </div>
+                        {project.externalUrl && (
+                          <a 
+                            href={project.externalUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/40 hover:text-white transition-colors border border-white/10 px-4 py-2 rounded-full bg-white/5 pointer-events-auto"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Full Version <ExternalLink size={12} />
+                          </a>
+                        )}
+                      </div>
                     </div>
-                    {project.externalUrl && (
-                      <a 
-                        href={project.externalUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/40 hover:text-white transition-colors border border-white/10 px-4 py-2 rounded-full bg-white/5"
-                      >
-                        Full Version <ExternalLink size={12} />
-                      </a>
-                    )}
+
+                    <div className="flex items-center gap-4 md:gap-8 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                      <button onClick={() => setIsMuted(!isMuted)} className="text-white/60 hover:text-white transition-colors">
+                        {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+                      </button>
+                      <button onClick={toggleVideoPlay} className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-transform shadow-xl">
+                        {isVideoPlaying ? <Pause size={24} fill="black" /> : <Play size={24} fill="black" className="ml-1" />}
+                      </button>
+                      <button onClick={toggleFullscreen} className="text-white/60 hover:text-white transition-colors">
+                        <Maximize size={24} />
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
-              </div>
-            </div>
+              )}
+            </AnimatePresence>
 
             {/* Navigation Arrows (Sides) */}
-            <div className="absolute inset-y-0 left-0 w-32 flex items-center justify-start pl-6 bg-gradient-to-r from-black/40 to-transparent opacity-0 hover:opacity-100 transition-opacity">
-              <button onClick={handlePrev} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-white hover:text-deepblack transition-all">
-                <ChevronLeft size={20} />
-              </button>
-            </div>
-            <div className="absolute inset-y-0 right-0 w-32 flex items-center justify-end pr-6 bg-gradient-to-l from-black/40 to-transparent opacity-0 hover:opacity-100 transition-opacity">
-              <button onClick={handleNext} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-white hover:text-deepblack transition-all">
-                <ChevronRight size={20} />
-              </button>
-            </div>
+            <AnimatePresence>
+              {showControls && (
+                <>
+                  <motion.div 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    className="absolute inset-y-0 left-0 w-32 flex items-center justify-start pl-6 bg-gradient-to-r from-black/40 to-transparent pointer-events-none"
+                  >
+                    <button onClick={(e) => { e.stopPropagation(); handlePrev(); }} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-white hover:text-deepblack transition-all pointer-events-auto">
+                      <ChevronLeft size={20} />
+                    </button>
+                  </motion.div>
+                  <motion.div 
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    className="absolute inset-y-0 right-0 w-32 flex items-center justify-end pr-6 bg-gradient-to-l from-black/40 to-transparent pointer-events-none"
+                  >
+                    <button onClick={(e) => { e.stopPropagation(); handleNext(); }} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-white hover:text-deepblack transition-all pointer-events-auto">
+                      <ChevronRight size={20} />
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </motion.div>
         </div>
       )}
