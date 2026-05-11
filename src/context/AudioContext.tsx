@@ -211,7 +211,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     <AudioContext.Provider value={{ 
       isIslandVisible, setIsIslandVisible, isPlaying, setIsPlaying, currentTrackTitle,
       currentTrackUrl, currentTrackArtwork, progress, duration, currentTime, tracks, currentTrackIndex,
-      playTrack, togglePlay, nextTrack, prevTrack, seek, analyzerData, firstTrack
+      playTrack, togglePlay, nextTrack, prevTrack, pauseAudio, seek, analyzerData, firstTrack
     }}>
       {children}
     </AudioContext.Provider>
