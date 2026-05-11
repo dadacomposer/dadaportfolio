@@ -7,7 +7,7 @@ import ProjectCard from './ProjectCard';
 import ProjectIslandModal from './ProjectIslandModal';
 
 // Sub-component to handle giant scroll logic safely
-function ProjectScroll({ projects, openModal }: { projects: any[], openModal: (idx: number) => void }) {
+function ProjectScroll({ projects, openModal, hideArrows }: { projects: any[], openModal: (idx: number) => void, hideArrows: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollXProgress } = useScroll({ container: containerRef });
 
@@ -24,22 +24,38 @@ function ProjectScroll({ projects, openModal }: { projects: any[], openModal: (i
   return (
     <div className="w-full relative h-[600px] md:h-[800px] flex items-center group/carousel">
       {/* Navigation Arrows - Maximum Visibility */}
-      <div className="absolute inset-y-0 left-0 md:left-10 flex items-center z-[999] pointer-events-none px-4">
-        <button 
-          onClick={() => scroll('left')}
-          className="w-14 h-14 md:w-20 md:h-20 rounded-full border border-white/20 bg-black/60 backdrop-blur-2xl flex items-center justify-center text-white hover:bg-accent transition-all pointer-events-auto shadow-2xl"
-        >
-          <ChevronLeft size={40} strokeWidth={1.5} />
-        </button>
-      </div>
-      <div className="absolute inset-y-0 right-0 md:right-10 flex items-center z-[999] pointer-events-none px-4">
-        <button 
-          onClick={() => scroll('right')}
-          className="w-14 h-14 md:w-20 md:h-20 rounded-full border border-white/20 bg-black/60 backdrop-blur-2xl flex items-center justify-center text-white hover:bg-accent transition-all pointer-events-auto shadow-2xl"
-        >
-          <ChevronRight size={40} strokeWidth={1.5} />
-        </button>
-      </div>
+      <AnimatePresence>
+        {!hideArrows && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-y-0 left-0 md:left-10 flex items-center z-[999] pointer-events-none px-4"
+            >
+              <button 
+                onClick={() => scroll('left')}
+                className="w-14 h-14 md:w-20 md:h-20 rounded-full border border-white/20 bg-black/60 backdrop-blur-2xl flex items-center justify-center text-white hover:bg-accent transition-all pointer-events-auto shadow-2xl"
+              >
+                <ChevronLeft size={40} strokeWidth={1.5} />
+              </button>
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-y-0 right-0 md:right-10 flex items-center z-[999] pointer-events-none px-4"
+            >
+              <button 
+                onClick={() => scroll('right')}
+                className="w-14 h-14 md:w-20 md:h-20 rounded-full border border-white/20 bg-black/60 backdrop-blur-2xl flex items-center justify-center text-white hover:bg-accent transition-all pointer-events-auto shadow-2xl"
+              >
+                <ChevronRight size={40} strokeWidth={1.5} />
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Carousel Container */}
       <div 
@@ -109,7 +125,7 @@ export default function ProjectCarousel() {
         </div>
 
         {projects.length > 0 ? (
-          <ProjectScroll projects={projects} openModal={openModal} />
+          <ProjectScroll projects={projects} openModal={openModal} hideArrows={modalOpen} />
         ) : (
           <div className="w-full h-80 flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-white/10 border-t-accent rounded-full animate-spin" />
