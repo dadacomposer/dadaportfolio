@@ -94,10 +94,11 @@ export default function ProjectIslandModal({ isOpen, projects, selectedIndex, on
     if (!video || !project) return;
 
     // Use Mux HLS URL if available for this project title
-    const muxData = muxVideos[project.title as keyof typeof muxVideos];
+    const projectTitle = project?.title || "";
+    const muxData = muxVideos[projectTitle as keyof typeof muxVideos];
     const videoSrc = muxData?.hlsUrl || project.videoUrl;
 
-    console.log(`🎬 Loading video for: ${project.title}`, { hasMux: !!muxData, src: videoSrc });
+    console.log(`🎬 Loading video for: ${projectTitle}`, { hasMux: !!muxData, src: videoSrc });
 
     if (!videoSrc) return;
 
@@ -108,17 +109,23 @@ export default function ProjectIslandModal({ isOpen, projects, selectedIndex, on
     }
 
     if (videoSrc.endsWith('.m3u8')) {
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          capLevelToPlayerSize: true,
-          autoStartLoad: true
-        });
-        hls.loadSource(videoSrc);
-        hls.attachMedia(video);
-        hlsRef.current = hls;
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          console.log("✅ HLS Manifest parsed, ready to play");
-        });
+      // Dynamic check for Hls to avoid any SSR issues even if imported
+      if (typeof window !== 'undefined' && Hls.isSupported()) {
+        try {
+          const hls = new Hls({
+            capLevelToPlayerSize: true,
+            autoStartLoad: true
+          });
+          hls.loadSource(videoSrc);
+          hls.attachMedia(video);
+          hlsRef.current = hls;
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            console.log("✅ HLS Manifest parsed, ready to play");
+          });
+        } catch (hlsError) {
+          console.error("❌ HLS.js error:", hlsError);
+          video.src = videoSrc; // Fallback to native
+        }
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         // Native HLS support (Safari)
         video.src = videoSrc;
