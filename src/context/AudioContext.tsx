@@ -51,7 +51,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const previewStartRef = useRef<number>(0);
 
   useEffect(() => {
-    console.log("Fetching tracks from Sanity...");
     client.fetch(`*[_type == "track"] | order(_createdAt desc) {
       _id,
       title,
@@ -59,9 +58,16 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       "artwork": artwork.asset->url,
       previewStart
     }`).then(data => {
-      console.log("Tracks loaded:", data.length);
       setTracks(data);
       tracksRef.current = data;
+      // Preload a random track immediately so first play is instant
+      if (data.length > 0 && audioRef.current) {
+        const randomIdx = Math.floor(Math.random() * data.length);
+        const preloadTrack = data[randomIdx];
+        audioRef.current.src = preloadTrack.url;
+        audioRef.current.preload = 'auto';
+        audioRef.current.load();
+      }
     }).catch(err => {
       console.error("Sanity fetch error:", err);
     });
