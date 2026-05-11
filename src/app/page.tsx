@@ -2,7 +2,7 @@
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { motion, useScroll, useTransform, AnimatePresence, Variants } from 'framer-motion';
-import { Music, AudioWaveform, MicVocal, AudioLines, Ear, Infinity, Play, Square, ArrowRight } from 'lucide-react';
+import { Music, AudioWaveform, MicVocal, AudioLines, Ear, Infinity, Play, Square, ArrowRight, Shuffle } from 'lucide-react';
 import { useAudio } from '@/context/AudioContext';
 import { useRouter } from 'next/navigation';
 import AudioOscillator from '@/components/AudioOscillator';
@@ -13,7 +13,7 @@ import AudioBloom from '@/components/AudioBloom';
 export default function Home() {
   const containerRef = useRef(null);
   const router = useRouter();
-  const { isPlaying, togglePlay, currentTrackUrl } = useAudio();
+  const { isPlaying, togglePlay, currentTrackUrl, playRandomTrack } = useAudio();
   const [hoveredService, setHoveredService] = useState<number | null>(null);
 
   const { scrollYProgress } = useScroll({
@@ -42,10 +42,15 @@ export default function Home() {
 
   const handleListenClick = () => {
     if (!isPlaying) {
-      togglePlay();
+      playRandomTrack();
     } else {
       router.push('/listen');
     }
+  };
+
+  const handleShuffleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    playRandomTrack();
   };
 
   return (
@@ -111,10 +116,19 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -5 }}
                     transition={{ duration: 0.3 }}
-                    className="flex items-center"
+                    className="flex items-center gap-2"
                   >
-                    {!isPlaying && <Play className="w-4 h-4 mr-2" fill="currentColor" />}
+                    {!isPlaying && <Play className="w-4 h-4" fill="currentColor" />}
                     {isPlaying ? "View Full Library" : "Tap to listen"}
+                    {!isPlaying && (
+                      <span
+                        onClick={handleShuffleClick}
+                        className="ml-2 p-1 rounded-lg bg-black/10 hover:bg-black/20 transition-colors cursor-pointer"
+                        title="Play random track"
+                      >
+                        <Shuffle className="w-3.5 h-3.5" />
+                      </span>
+                    )}
                   </motion.span>
                 </AnimatePresence>
               </motion.button>

@@ -16,6 +16,7 @@ interface AudioContextType {
   tracks: any[];
   currentTrackIndex: number;
   playTrack: (url: string, title: string, artwork?: string, previewStart?: number) => void;
+  playRandomTrack: () => void;
   togglePlay: () => void;
   nextTrack: () => void;
   prevTrack: () => void;
@@ -50,6 +51,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const previewStartRef = useRef<number>(0);
 
   useEffect(() => {
+    console.log("Fetching tracks from Sanity...");
     client.fetch(`*[_type == "track"] | order(_createdAt desc) {
       _id,
       title,
@@ -57,8 +59,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       "artwork": artwork.asset->url,
       previewStart
     }`).then(data => {
+      console.log("Tracks loaded:", data.length);
       setTracks(data);
       tracksRef.current = data;
+    }).catch(err => {
+      console.error("Sanity fetch error:", err);
     });
   }, []);
 
@@ -191,6 +196,14 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const playRandomTrack = () => {
+    const list = tracksRef.current;
+    if (!list.length) return;
+    const randomIndex = Math.floor(Math.random() * list.length);
+    const track = list[randomIndex];
+    if (track) playTrack(track.url, track.title, track.artwork, track.previewStart);
+  };
+
   const nextTrack = () => {
     const nextIndex = (currentTrackIndex + 1) % tracks.length;
     const track = tracks[nextIndex];
@@ -211,7 +224,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     <AudioContext.Provider value={{ 
       isIslandVisible, setIsIslandVisible, isPlaying, setIsPlaying, currentTrackTitle,
       currentTrackUrl, currentTrackArtwork, progress, duration, currentTime, tracks, currentTrackIndex,
-      playTrack, togglePlay, nextTrack, prevTrack, pauseAudio, seek, analyzerData, firstTrack
+      playTrack, playRandomTrack, togglePlay, nextTrack, prevTrack, pauseAudio, seek, analyzerData, firstTrack
     }}>
       {children}
     </AudioContext.Provider>
