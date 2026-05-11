@@ -5,7 +5,7 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 interface ProjectCardProps {
   project: any;
   onClick: () => void;
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export default function ProjectCard({ project, onClick, containerRef }: ProjectCardProps) {
