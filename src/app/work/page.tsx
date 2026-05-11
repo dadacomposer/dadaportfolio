@@ -40,7 +40,7 @@ export default function WorkPage() {
       <div className="flex flex-col -space-y-16">
         {videoProjects.map((video, index) => (
           <motion.div 
-            key={video.id}
+            key={video._id}
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             whileInView={{ opacity: 1, y: 0, scale: 1 }}
             viewport={{ once: true, margin: "-100px" }}
