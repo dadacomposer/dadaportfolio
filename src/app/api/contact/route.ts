@@ -1,15 +1,17 @@
 import { createClient } from 'next-sanity';
 import { NextResponse } from 'next/server';
 
-const client = createClient({
-  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || '4o79sm04',
-  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || 'production',
-  apiVersion: process.env.NEXT_PUBLIC_SANITY_API_VERSION || '2023-05-03',
-  token: process.env.SANITY_WRITE_TOKEN,
-  useCdn: false,
-});
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
+  const client = createClient({
+    projectId: '4o79sm04',
+    dataset: 'production',
+    apiVersion: '2023-05-03',
+    token: process.env.SANITY_WRITE_TOKEN,
+    useCdn: false,
+  });
+
   try {
     const body = await req.json();
     
@@ -22,7 +24,7 @@ export async function POST(req: Request) {
       email: body.email,
       phone: body.phone,
       message: body.message,
-      submittedAt: new Error().stack?.includes('POST') ? new Date().toISOString() : undefined, // Just a way to get current date
+      submittedAt: new Date().toISOString(),
     });
 
     // If you also want to send an email notification, you could do it here
