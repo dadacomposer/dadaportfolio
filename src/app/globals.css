@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@theme {
+  --color-deepblack: #050505;
+  --color-anthracite: #1a1a1a;
+  --color-accent: #3b82f6; /* Electric Blue */
+  --font-sans: 'Inter', sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+:root {
+  --accent-rgb: 59, 130, 246;
+}
+
+@layer base {
+  body {
+    @apply bg-deepblack text-gray-200 font-sans antialiased;
+    position: relative;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image: 
+      linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: linear-gradient(to right, 
+      black 0%, 
+      transparent 25%, 
+      transparent 75%, 
+      black 100%
+    );
+    pointer-events: none;
+  }
+  
+  /* Custom scrollbar for webkit */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-deepblack);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-anthracite);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #333;
+  }
+}
+
+@layer utilities {
+  .text-shadow-accent {
+    text-shadow: 0 0 10px rgba(223, 151, 85, 0.4), 0 0 20px rgba(223, 151, 85, 0.2);
+  }
+  
+  .box-shadow-accent {
+    box-shadow: 0 0 10px rgba(223, 151, 85, 0.2), inset 0 0 10px rgba(223, 151, 85, 0.05);
+  }
+  
+  .glass {
+    @apply bg-anthracite/60 backdrop-blur-md border border-white/5 rounded-2xl;
+  }
+}
