@@ -49,6 +49,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const tracksRef = useRef<any[]>([]);
   const currentIndexRef = useRef(-1);
   const previewStartRef = useRef<number>(0);
+  const preloadedTrackRef = useRef<any>(null);
 
   useEffect(() => {
     client.fetch(`*[_type == "track"] | order(_createdAt desc) {
@@ -64,6 +65,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       if (data.length > 0 && audioRef.current) {
         const randomIdx = Math.floor(Math.random() * data.length);
         const preloadTrack = data[randomIdx];
+        preloadedTrackRef.current = preloadTrack;
         audioRef.current.src = preloadTrack.url;
         audioRef.current.preload = 'auto';
         audioRef.current.load();
@@ -163,8 +165,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       togglePlay();
     } else {
       previewStartRef.current = previewStart || 0;
-      audioRef.current.src = url;
-      audioRef.current.play().catch(e => console.log("Playback error:", e));
+      // Only skip src reset if this exact URL is already in the preloaded buffer
+      const alreadyPreloaded = preloadedTrackRef.current?.url === url;
+      if (!alreadyPreloaded) {
+        audioRef.current.src = url;
+      }
+      audioRef.current.play().catch(e => console.log('Playback error:', e));
 
       setCurrentTrackUrl(url);
       setCurrentTrackTitle(title);
@@ -175,6 +181,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       currentIndexRef.current = idx;
       setIsPlaying(true);
       setIsIslandVisible(true);
+      // Clear preloaded ref since we're now playing
+      preloadedTrackRef.current = null;
       setupVisualizer();
       if (audioContextRef.current?.state === 'suspended') audioContextRef.current.resume();
     }
@@ -205,9 +213,15 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const playRandomTrack = () => {
     const list = tracksRef.current;
     if (!list.length) return;
-    const randomIndex = Math.floor(Math.random() * list.length);
-    const track = list[randomIndex];
-    if (track) playTrack(track.url, track.title, track.artwork, track.previewStart);
+    // If a track is already preloaded in the buffer, use it directly (instant play)
+    if (preloadedTrackRef.current) {
+      const t = preloadedTrackRef.current;
+      playTrack(t.url, t.title, t.artwork, t.previewStart);
+    } else {
+      const randomIndex = Math.floor(Math.random() * list.length);
+      const track = list[randomIndex];
+      if (track) playTrack(track.url, track.title, track.artwork, track.previewStart);
+    }
   };
 
   const nextTrack = () => {
