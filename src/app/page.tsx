@@ -158,7 +158,7 @@ export default function Home() {
         </motion.section>
       </div>
 
-      {/* Client Marquee Strip - Moved between Hero and Services */}
+      {/* Client Marquee Strip */}
       <section className="w-full py-2 relative z-20">
         <div className="w-full border-y border-white/5 bg-deepblack py-4 overflow-hidden relative">
           <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-deepblack to-transparent z-10 pointer-events-none" />
@@ -172,11 +172,8 @@ export default function Home() {
             .animate-marquee {
               display: flex;
               width: max-content;
-              animation: marquee 30s linear infinite;
+              animation: marquee 65s linear infinite;
               will-change: transform;
-            }
-            .animate-marquee:hover {
-              animation-play-state: paused;
             }
           `}</style>
 
@@ -188,7 +185,7 @@ export default function Home() {
                     <img
                       src={`/clients/${num}.png`}
                       alt={`Client ${num}`}
-                      className="max-h-full max-w-full object-contain opacity-40 hover:opacity-100 transition-all duration-700 grayscale brightness-[3] hover:grayscale-0"
+                      className="max-h-full max-w-full object-contain opacity-70 hover:opacity-100 transition-all duration-700"
                     />
                   </div>
                 ))}

@@ -65,17 +65,19 @@ export default function AudioOscillator() {
       };
     });
 
-    let currentMouseX = mouseX;
-    let currentMouseY = mouseY;
+    let currentMouseX = window.innerWidth / 2;
+    let currentMouseY = window.innerHeight / 2;
     let audioSmooth = 0;
     let audioActiveMultiplier = 0; // New multiplier for smooth state transition
 
     const draw = () => {
       time += 0.005;
       
-      // Extreme mouse smoothing (high inertia)
-      currentMouseX += (mouseX - currentMouseX) * 0.005;
-      currentMouseY += (mouseY - currentMouseY) * 0.005;
+      // Extreme mouse smoothing (high inertia) - even slower now
+      const targetMouseX = window.innerWidth / 2 + (mouseX - window.innerWidth / 2) * 0.15;
+      const targetMouseY = window.innerHeight / 2 + (mouseY - window.innerHeight / 2) * 0.15;
+      currentMouseX += (targetMouseX - currentMouseX) * 0.003;
+      currentMouseY += (targetMouseY - currentMouseY) * 0.003;
 
       // Smoothly transition the active state multiplier (fade in/out over ~2 seconds)
       const targetMultiplier = isPlayingRef.current ? 1 : 0;
@@ -91,8 +93,8 @@ export default function AudioOscillator() {
       const centerY = currentMouseY;
 
       // Use audioActiveMultiplier for all audio-driven expansions
-      const audioExpansion = audioActiveMultiplier * audioSmooth * 150;
-      const pulse = audioActiveMultiplier * Math.sin(time * 5) * 5;
+      const audioExpansion = audioActiveMultiplier * audioSmooth * 250;
+      const pulse = audioActiveMultiplier * Math.sin(time * 5) * 8;
 
       particles.forEach((p, i) => {
         p.angle += p.speed * 0.0003;
@@ -152,7 +154,7 @@ export default function AudioOscillator() {
       animate={{ opacity: 1 }}
       transition={{ duration: 4 }}
     >
-      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full z-0 mix-blend-screen"></canvas>
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full z-0 mix-blend-screen" style={{ filter: 'blur(1.2px)' }}></canvas>
     </motion.div>
   );
 }
