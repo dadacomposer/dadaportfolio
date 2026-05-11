@@ -1,8 +1,10 @@
 'use client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, ExternalLink, Play, Pause, Maximize, Volume2, VolumeX } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, ExternalLink, Play, Pause, Maximize, Volume2, VolumeX, Maximize2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useAudio } from '@/context/AudioContext';
+import Hls from 'hls.js';
+import { muxVideos } from '@/data/muxVideos';
 
 interface Project {
   _id: string;
@@ -24,6 +26,7 @@ interface Props {
 
 export default function ProjectIslandModal({ isOpen, projects, selectedIndex, onClose, onChangeIndex }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const { isPlaying: isMusicPlaying, pauseAudio } = useAudio();
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);

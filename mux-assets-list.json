@@ -1,0 +1,30 @@
+[
+  {
+    "asset_id": "I8dhCSyr5wYgOcKzCrtwS4gi01irFtNue402Q5lN68qOY",
+    "playback_id": "VDom02f7uOCiQ01KylEnvSxtbrynZAG65vUimyD2iBJJw",
+    "status": "ready",
+    "created_at": "1778497745",
+    "hls_url": "https://stream.mux.com/VDom02f7uOCiQ01KylEnvSxtbrynZAG65vUimyD2iBJJw.m3u8"
+  },
+  {
+    "asset_id": "MIryIDgbSBIddxiNJra4MawnTmcjC009tpCgH3bVWlR4",
+    "playback_id": "kMXmmGSc7qWurBH801UJD0101lhV5TtnH6DttZ02v01pu02bI",
+    "status": "ready",
+    "created_at": "1778497207",
+    "hls_url": "https://stream.mux.com/kMXmmGSc7qWurBH801UJD0101lhV5TtnH6DttZ02v01pu02bI.m3u8"
+  },
+  {
+    "asset_id": "1kLv2gWpXWOb02cDoo00MkzRqBEN2mhdypNUY3LOH7p01o",
+    "playback_id": "ajsrSGI9dDVTlIEQAIE1N3gCegIA018B8DxBG9ECQJN8",
+    "status": "ready",
+    "created_at": "1778496775",
+    "hls_url": "https://stream.mux.com/ajsrSGI9dDVTlIEQAIE1N3gCegIA018B8DxBG9ECQJN8.m3u8"
+  },
+  {
+    "asset_id": "uCXpDAVi9neWeqlGeiNL25TwryS01aoUiucdv78koHlk",
+    "playback_id": "zhe8VLsgtuYPQvXncriiaYfRk00HUr1EDc00N9ts3zFnI",
+    "status": "ready",
+    "created_at": "1778496753",
+    "hls_url": "https://stream.mux.com/zhe8VLsgtuYPQvXncriiaYfRk00HUr1EDc00N9ts3zFnI.m3u8"
+  }
+]
