@@ -35,7 +35,7 @@ export default function Home() {
 
   const blurReveal = {
     hidden: { opacity: 0, y: 30, filter: "blur(15px)" },
-    visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 1.2, ease: "easeOut" } }
+    visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 1.2, ease: [0.33, 1, 0.68, 1] } }
   };
 
   const [isHeroHovered, setIsHeroHovered] = useState(false);

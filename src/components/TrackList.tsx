@@ -8,7 +8,7 @@ export default function TrackList({ tracks }: { tracks: any[] }) {
 
   const blurReveal = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.33, 1, 0.68, 1] } }
   };
 
   return (
