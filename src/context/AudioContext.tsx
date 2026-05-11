@@ -52,26 +52,20 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const preloadedTrackRef = useRef<any>(null);
 
   useEffect(() => {
-    client.fetch(`*[_type == "track"] | order(_createdAt desc) {
-      _id,
-      title,
-      "url": audioFile.asset->url,
-      "artwork": artwork.asset->url,
-      previewStart
-    }`).then(data => {
-      setTracks(data);
-      tracksRef.current = data;
+    // Use the static Cloudinary catalog instead of fetching from Sanity
+    import('@/data/cloudinaryTracks').then(({ cloudinaryTracks }) => {
+      setTracks(cloudinaryTracks);
+      tracksRef.current = cloudinaryTracks;
+      
       // Preload a random track immediately so first play is instant
-      if (data.length > 0 && audioRef.current) {
-        const randomIdx = Math.floor(Math.random() * data.length);
-        const preloadTrack = data[randomIdx];
+      if (cloudinaryTracks.length > 0 && audioRef.current) {
+        const randomIdx = Math.floor(Math.random() * cloudinaryTracks.length);
+        const preloadTrack = cloudinaryTracks[randomIdx];
         preloadedTrackRef.current = preloadTrack;
         audioRef.current.src = preloadTrack.url;
         audioRef.current.preload = 'auto';
         audioRef.current.load();
       }
-    }).catch(err => {
-      console.error("Sanity fetch error:", err);
     });
   }, []);
 
