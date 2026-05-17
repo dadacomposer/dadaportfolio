@@ -57,7 +57,7 @@ export default function Home() {
     <div className="flex flex-col items-center w-full overflow-hidden relative" ref={containerRef}>
       
       {/* Hero Wrapper */}
-      <div id="hero" className="w-full relative min-h-[85vh] flex flex-col justify-center items-center overflow-hidden text-center">
+      <div id="hero" className="w-full relative min-h-[70vh] flex flex-col justify-center items-center overflow-hidden text-center">
         <AudioOscillator />
         
         <motion.section 
@@ -164,8 +164,8 @@ export default function Home() {
       </div>
 
       {/* Client Marquee Strip */}
-      <section className="w-full py-2 relative z-20">
-        <div className="w-full border-y border-white/5 bg-deepblack py-4 overflow-hidden relative">
+      <section className="w-full py-2 mt-[-5vh] relative z-20">
+        <div className="w-full py-4 overflow-hidden relative">
           <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-deepblack to-transparent z-10 pointer-events-none" />
           <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-deepblack to-transparent z-10 pointer-events-none" />
 
@@ -185,12 +185,13 @@ export default function Home() {
           <div className="animate-marquee">
             {[0, 1, 2, 3].map((loop) => (
               <div key={loop} className="flex items-center gap-20 md:gap-40 px-10 md:px-20 shrink-0">
-                {[1, 2, 7, 8, 9, 10].map((num) => (
+                {[1, 2, 7, 9, 10].map((num) => (
                   <div key={num} className="h-10 md:h-12 w-32 md:w-56 shrink-0 flex items-center justify-center">
                     <img
                       src={`/clients/clean_${num}.png`}
                       alt={`Client ${num}`}
-                      className="max-h-full max-w-full object-contain opacity-70 hover:opacity-100 transition-all duration-500 dark:invert-0 invert"
+                      style={{ filter: 'invert(var(--logo-invert))' }}
+                      className="max-h-full max-w-full object-contain opacity-70 hover:opacity-100 transition-opacity duration-500"
                     />
                   </div>
                 ))}

@@ -5,6 +5,7 @@
   --theme-surface: #e9ecef;  /* Slightly darker for cards/surfaces */
   --theme-text: #111111;     /* Almost black for text */
   --theme-muted: #555555;    /* Dark gray for secondary text in light mode */
+  --logo-invert: 1;          /* Invert logos to black in light mode */
 }
 
 .dark {
@@ -12,6 +13,7 @@
   --theme-surface: #1a1a1a;
   --theme-text: #ffffff;
   --theme-muted: #a1a1aa;    /* Light gray for secondary text in dark mode */
+  --logo-invert: 0;          /* Keep logos white in dark mode */
 }
 
 @theme {
