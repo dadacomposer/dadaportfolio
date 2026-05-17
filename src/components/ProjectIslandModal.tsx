@@ -156,16 +156,24 @@ export default function ProjectIslandModal({ isOpen, projects, selectedIndex, on
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
-      const p = (videoRef.current.currentTime / videoRef.current.duration) * 100;
-      setVideoProgress(p);
+      const duration = videoRef.current.duration;
+      const currentTime = videoRef.current.currentTime;
+      let p = 0;
+      if (duration && !isNaN(duration)) {
+        p = (currentTime / duration) * 100;
+      }
+      setVideoProgress(p || 0);
     }
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (videoRef.current) {
-      const time = (parseFloat(e.target.value) / 100) * videoRef.current.duration;
-      videoRef.current.currentTime = time;
-      setVideoProgress(parseFloat(e.target.value));
+      const duration = videoRef.current.duration;
+      if (duration && !isNaN(duration)) {
+        const time = (parseFloat(e.target.value) / 100) * duration;
+        videoRef.current.currentTime = time;
+      }
+      setVideoProgress(parseFloat(e.target.value) || 0);
     }
   };
 
