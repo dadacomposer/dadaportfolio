@@ -4,12 +4,14 @@
   --theme-bg: #f8f9fa;       /* Very light gray for comfortable background */
   --theme-surface: #e9ecef;  /* Slightly darker for cards/surfaces */
   --theme-text: #111111;     /* Almost black for text */
+  --theme-muted: #555555;    /* Dark gray for secondary text in light mode */
 }
 
 .dark {
   --theme-bg: #050505;
   --theme-surface: #1a1a1a;
   --theme-text: #ffffff;
+  --theme-muted: #a1a1aa;    /* Light gray for secondary text in dark mode */
 }
 
 @theme {
@@ -17,6 +19,14 @@
   --color-anthracite: var(--theme-surface);
   --color-white: var(--theme-text);
   --color-black: var(--theme-bg);
+  
+  /* Map all grays to our dynamic muted color to ensure visibility in both modes */
+  --color-gray-200: var(--theme-muted);
+  --color-gray-300: var(--theme-muted);
+  --color-gray-400: var(--theme-muted);
+  --color-gray-500: var(--theme-muted);
+  --color-gray-600: var(--theme-muted);
+  
   --color-accent: #3b82f6; /* Electric Blue */
   --font-sans: 'Inter', sans-serif;
 }

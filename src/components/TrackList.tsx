@@ -13,9 +13,7 @@ export default function TrackList({ tracks }: { tracks: any[] }) {
 
   return (
     <div className="relative w-full">
-      {/* Gradient Masks for smooth scroll entry/exit */}
-      <div className="absolute top-0 left-0 w-full h-20 bg-gradient-to-b from-deepblack via-deepblack/80 to-transparent z-10 pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-deepblack via-deepblack/80 to-transparent z-10 pointer-events-none" />
+      {/* No Gradient Masks to keep it completely invisible */}
 
       {/* Scrollable Container - Now shorter and invisible */}
       <div className="h-[450px] overflow-y-auto pr-2 custom-scrollbar scroll-smooth py-10">
