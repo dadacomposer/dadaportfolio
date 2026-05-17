@@ -165,10 +165,13 @@ export default function Home() {
 
       {/* Client Marquee Strip */}
       <section className="w-full py-2 mt-[-5vh] relative z-20">
-        <div className="w-full py-4 overflow-hidden relative">
-          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-deepblack to-transparent z-10 pointer-events-none" />
-          <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-deepblack to-transparent z-10 pointer-events-none" />
-
+        <div 
+          className="w-full py-4 overflow-hidden relative"
+          style={{ 
+            maskImage: 'linear-gradient(to right, transparent, black 15%, black 85%, transparent)', 
+            WebkitMaskImage: 'linear-gradient(to right, transparent, black 15%, black 85%, transparent)' 
+          }}
+        >
           <style jsx>{`
             @keyframes marquee {
               0% { transform: translateX(0); }
