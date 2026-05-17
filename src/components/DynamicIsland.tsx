@@ -16,19 +16,23 @@ function DesktopIsland() {
   const fmt = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
   return (
-    <div className="fixed bottom-8 left-0 right-0 z-50 flex justify-center px-6">
-      <motion.div
+    <div className="fixed bottom-8 left-0 right-0 z-50 flex justify-center px-6 pointer-events-none">
+      {/* Invisible Hover Hitbox */}
+      <div 
+        className="w-full max-w-[900px] h-[64px] flex justify-center items-center pointer-events-auto"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        initial={{ y: 100, opacity: 0 }}
-        animate={{
-          y: 0, opacity: 1,
-          width: isHovered ? 'min(100%, 900px)' : '220px',
-          height: '64px',
-        }}
-        transition={{ type: 'spring', stiffness: 260, damping: 25, width: { duration: 0.55, ease: [0.23, 1, 0.32, 1] } }}
-        className="bg-deepblack/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden flex items-center"
       >
+        <motion.div
+          initial={{ y: 100, opacity: 0 }}
+          animate={{
+            y: 0, opacity: 1,
+            width: isHovered ? '100%' : '220px',
+            height: '100%',
+          }}
+          transition={{ type: 'spring', stiffness: 260, damping: 25, width: { duration: 0.55, ease: [0.23, 1, 0.32, 1] } }}
+          className="bg-deepblack/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden flex items-center"
+        >
         <AnimatePresence mode="wait">
           {!isHovered ? (
             <motion.div key="compact" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -84,7 +88,8 @@ function DesktopIsland() {
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 }

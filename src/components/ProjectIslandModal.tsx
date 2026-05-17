@@ -152,7 +152,7 @@ export default function ProjectIslandModal({ isOpen, projects, selectedIndex, on
       if (isVideoPlaying) {
         videoRef.current.pause();
       } else {
-        videoRef.current.play();
+        videoRef.current.play().catch(() => {});
         pauseAudio(); // Ensure music stops if video starts
       }
       setIsVideoPlaying(!isVideoPlaying);

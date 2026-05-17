@@ -39,7 +39,7 @@ export default function ProjectCard({ project, onClick, containerRef }: ProjectC
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isHovered && videoRef.current) {
-      videoRef.current.play();
+      videoRef.current.play().catch(() => {});
       interval = setInterval(() => {
         if (videoRef.current) {
           const jump = (videoRef.current.currentTime + 10) % (videoRef.current.duration || 100);
