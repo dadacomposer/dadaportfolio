@@ -188,9 +188,9 @@ export default function Home() {
                 {[1, 2, 7, 8, 9, 10].map((num) => (
                   <div key={num} className="h-10 md:h-12 w-32 md:w-56 shrink-0 flex items-center justify-center">
                     <img
-                      src={`/clients/${num}.png`}
+                      src={`/clients/clean_${num}.png`}
                       alt={`Client ${num}`}
-                      className="max-h-full max-w-full object-contain opacity-70 hover:opacity-100 transition-all duration-700 dark:mix-blend-normal mix-blend-multiply dark:invert-0 invert dark:grayscale-0 grayscale dark:contrast-100 contrast-200"
+                      className="max-h-full max-w-full object-contain opacity-70 hover:opacity-100 transition-all duration-500 dark:invert-0 invert"
                     />
                   </div>
                 ))}
