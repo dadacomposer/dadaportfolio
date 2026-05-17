@@ -14,8 +14,39 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "DADA | Sonic Minimalism",
-  description: "High-end audio post-production & scoring.",
+  metadataBase: new URL("https://dadacomposer.com"),
+  title: {
+    default: "DADA | Audio Post-Production & Composer for Hire",
+    template: "%s | DADA.COMPOSER"
+  },
+  description: "High-end audio post-production, bespoke music scoring, sound design, and foley. Hire a professional composer to elevate your film, commercial, or media project.",
+  keywords: ["composer for hire", "audio post-production", "sound design", "foley", "music scoring", "custom music", "media composer", "audio strategy", "film scoring"],
+  authors: [{ name: "DADA" }],
+  creator: "DADA",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://dadacomposer.com",
+    title: "DADA | High-End Audio Post-Production & Scoring",
+    description: "Bespoke music scoring and surgical sound design. Elevate your media with professional audio.",
+    siteName: "DADA.COMPOSER",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DADA | Audio Post-Production & Scoring",
+    description: "Bespoke music scoring and surgical sound design.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 import { ThemeProvider } from '@/components/ThemeProvider';
