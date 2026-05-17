@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, ExternalLink, Play, Pause, Maximize, Volume2, VolumeX, Maximize2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useAudio } from '@/context/AudioContext';
-import Hls from 'hls.js';
 import { muxVideos } from '@/data/muxVideos';
 
 interface Project {
@@ -26,7 +25,7 @@ interface Props {
 
 export default function ProjectIslandModal({ isOpen, projects, selectedIndex, onClose, onChangeIndex }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const hlsRef = useRef<Hls | null>(null);
+  const hlsRef = useRef<any>(null);
   const { isPlaying: isMusicPlaying, pauseAudio } = useAudio();
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
@@ -109,27 +108,32 @@ export default function ProjectIslandModal({ isOpen, projects, selectedIndex, on
     }
 
     if (videoSrc.endsWith('.m3u8')) {
-      // Dynamic check for Hls to avoid any SSR issues even if imported
-      if (typeof window !== 'undefined' && Hls.isSupported()) {
-        try {
-          const hls = new Hls({
-            capLevelToPlayerSize: true,
-            autoStartLoad: true
-          });
-          hls.loadSource(videoSrc);
-          hls.attachMedia(video);
-          hlsRef.current = hls;
-          hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            console.log("✅ HLS Manifest parsed, ready to play");
-          });
-        } catch (hlsError) {
-          console.error("❌ HLS.js error:", hlsError);
-          video.src = videoSrc; // Fallback to native
+      // Dynamic import to strictly prevent any Next.js/React crashes from static imports
+      import('hls.js').then((HlsModule) => {
+        const Hls = HlsModule.default || HlsModule;
+        if (Hls.isSupported()) {
+          try {
+            const hls = new (Hls as any)({
+              capLevelToPlayerSize: true,
+              autoStartLoad: true
+            });
+            hls.loadSource(videoSrc);
+            hls.attachMedia(video);
+            hlsRef.current = hls;
+            hls.on((Hls as any).Events.MANIFEST_PARSED, () => {
+              console.log("✅ HLS Manifest parsed, ready to play");
+            });
+          } catch (err) {
+            console.error("❌ HLS initialization error:", err);
+            video.src = videoSrc;
+          }
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = videoSrc;
         }
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        // Native HLS support (Safari)
+      }).catch(err => {
+        console.error("Failed to load hls.js dynamically:", err);
         video.src = videoSrc;
-      }
+      });
     } else {
       video.src = videoSrc;
     }
