@@ -190,7 +190,7 @@ export default function Home() {
                     <img
                       src={`/clients/${num}.png`}
                       alt={`Client ${num}`}
-                      className="max-h-full max-w-full object-contain opacity-70 hover:opacity-100 transition-all duration-700"
+                      className="max-h-full max-w-full object-contain opacity-70 hover:opacity-100 transition-all duration-700 dark:mix-blend-normal mix-blend-multiply dark:invert-0 invert dark:grayscale-0 grayscale dark:contrast-100 contrast-200"
                     />
                   </div>
                 ))}
