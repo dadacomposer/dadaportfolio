@@ -66,9 +66,7 @@ export default function ProjectIslandModal({ isOpen, projects, selectedIndex, on
     }
   }, [isOpen]);
 
-  if (!isOpen || !projects[selectedIndex]) return null;
-
-  const project = projects[selectedIndex];
+  const project = projects[selectedIndex] || null;
 
   const handlePrev = () => {
     if (selectedIndex > 0) onChangeIndex(selectedIndex - 1);
@@ -95,7 +93,7 @@ export default function ProjectIslandModal({ isOpen, projects, selectedIndex, on
     // Use Mux HLS URL if available for this project title
     const projectTitle = project?.title || "";
     const muxData = muxVideos[projectTitle as keyof typeof muxVideos];
-    const videoSrc = muxData?.hlsUrl || project.videoUrl;
+    const videoSrc = muxData?.hlsUrl || project?.videoUrl;
 
     console.log(`🎬 Loading video for: ${projectTitle}`, { hasMux: !!muxData, src: videoSrc });
 
@@ -122,6 +120,7 @@ export default function ProjectIslandModal({ isOpen, projects, selectedIndex, on
             hlsRef.current = hls;
             hls.on((Hls as any).Events.MANIFEST_PARSED, () => {
               console.log("✅ HLS Manifest parsed, ready to play");
+              video.play().catch(e => console.log("Play blocked:", e));
             });
           } catch (err) {
             console.error("❌ HLS initialization error:", err);
@@ -129,6 +128,7 @@ export default function ProjectIslandModal({ isOpen, projects, selectedIndex, on
           }
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
           video.src = videoSrc;
+          video.play().catch(e => console.log("Play blocked:", e));
         }
       }).catch(err => {
         console.error("Failed to load hls.js dynamically:", err);
@@ -136,6 +136,7 @@ export default function ProjectIslandModal({ isOpen, projects, selectedIndex, on
       });
     } else {
       video.src = videoSrc;
+      video.play().catch(e => console.log("Play blocked:", e));
     }
 
     return () => {
@@ -194,6 +195,8 @@ export default function ProjectIslandModal({ isOpen, projects, selectedIndex, on
       if (isVideoPlaying) setShowControls(false);
     }, 3000);
   };
+
+  if (!project) return null;
 
   return (
     <AnimatePresence>

@@ -13,11 +13,17 @@ function ProjectScroll({ projects, openModal, hideArrows }: { projects: any[], o
 
   const scroll = (direction: 'left' | 'right') => {
     if (containerRef.current) {
-      const scrollAmount = window.innerWidth * 0.9;
-      containerRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth'
-      });
+      const firstChild = containerRef.current.firstElementChild as HTMLElement;
+      if (firstChild) {
+        const containerStyle = window.getComputedStyle(containerRef.current);
+        const gap = parseFloat(containerStyle.gap) || 0;
+        const scrollAmount = firstChild.offsetWidth + gap;
+
+        containerRef.current.scrollBy({
+          left: direction === 'left' ? -scrollAmount : scrollAmount,
+          behavior: 'smooth'
+        });
+      }
     }
   };
 
