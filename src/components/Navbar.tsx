@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -56,13 +57,16 @@ export default function Navbar() {
           ))}
         </nav>
 
-        {/* Mobile Toggle */}
-        <button 
-          className="md:hidden text-white p-1"
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          {isOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
+          {/* Mobile Toggle */}
+          <button 
+            className="md:hidden text-white p-1"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            {isOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </motion.header>
 
       {/* Mobile Menu Overlay */}

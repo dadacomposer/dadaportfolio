@@ -1,8 +1,22 @@
 @import "tailwindcss";
 
+:root {
+  --theme-bg: #f8f9fa;       /* Very light gray for comfortable background */
+  --theme-surface: #e9ecef;  /* Slightly darker for cards/surfaces */
+  --theme-text: #111111;     /* Almost black for text */
+}
+
+.dark {
+  --theme-bg: #050505;
+  --theme-surface: #1a1a1a;
+  --theme-text: #ffffff;
+}
+
 @theme {
-  --color-deepblack: #050505;
-  --color-anthracite: #1a1a1a;
+  --color-deepblack: var(--theme-bg);
+  --color-anthracite: var(--theme-surface);
+  --color-white: var(--theme-text);
+  --color-black: var(--theme-bg);
   --color-accent: #3b82f6; /* Electric Blue */
   --font-sans: 'Inter', sans-serif;
 }

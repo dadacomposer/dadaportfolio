@@ -18,14 +18,17 @@ export const metadata: Metadata = {
   description: "High-end audio post-production & scoring.",
 };
 
+import { ThemeProvider } from '@/components/ThemeProvider';
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} scroll-smooth`}>
-      <body className="flex flex-col min-h-screen bg-deepblack text-white relative font-sans">
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} scroll-smooth`}>
+      <body className="flex flex-col min-h-screen bg-deepblack text-white relative font-sans transition-colors duration-500">
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
         {/* Google Analytics */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-EDB2904MLN"
@@ -46,6 +49,7 @@ export default function RootLayout({
           <Footer />
           <DynamicIsland />
         </AudioProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

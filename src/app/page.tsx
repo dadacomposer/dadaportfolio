@@ -78,9 +78,14 @@ export default function Home() {
             </div>
           </motion.div>
           
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-light tracking-tight leading-[1.1] mb-10 text-white max-w-4xl flex flex-col items-center">
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.2, delay: 0.8, ease: [0.33, 1, 0.68, 1] }}
+            className="text-4xl md:text-6xl lg:text-7xl font-light tracking-tight leading-[1.1] mb-10 text-white/80 max-w-4xl flex flex-col items-center"
+          >
              High-end audio post-production & scoring
-          </h1>
+          </motion.h1>
 
           <motion.div 
             className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-2"
