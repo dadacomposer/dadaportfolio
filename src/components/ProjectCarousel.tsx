@@ -74,6 +74,7 @@ function ProjectScroll({ projects, openModal, hideArrows }: { projects: any[], o
             <ProjectCard 
               project={project} 
               onClick={() => openModal(index)} 
+              containerRef={containerRef}
             />
           </div>
         ))}

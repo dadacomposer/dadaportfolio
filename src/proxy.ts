@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // Only protect /admin routes, but allow the login page itself to be viewed
   if (request.nextUrl.pathname.startsWith('/admin') && request.nextUrl.pathname !== '/admin') {
     const session = request.cookies.get('admin_session');
