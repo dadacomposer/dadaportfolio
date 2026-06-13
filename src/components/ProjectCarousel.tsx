@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useState, useEffect } from 'react';
 import { motion, useScroll, AnimatePresence } from 'framer-motion';
-import { client } from '@/sanity/lib/client';
+import { supabase } from '@/lib/supabase';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ProjectCard from './ProjectCard';
 import ProjectIslandModal from './ProjectIslandModal';
@@ -66,16 +66,16 @@ function ProjectScroll({ projects, openModal, hideArrows }: { projects: any[], o
       {/* Carousel Container */}
       <div 
         ref={containerRef}
-        className="flex gap-16 md:gap-32 overflow-x-auto px-[5vw] py-10 snap-x snap-mandatory hide-scrollbar relative z-30 w-full"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        className="flex gap-4 md:gap-8 px-4 md:px-[20vw] overflow-x-auto hide-scrollbar snap-x snap-mandatory py-20 relative z-10 scroll-smooth items-center min-h-[600px] md:min-h-[800px]"
+        style={{ scrollSnapType: 'x mandatory' }}
       >
         {projects.map((project, index) => (
-          <ProjectCard 
-            key={`${project._id}-${index}`} 
-            project={project} 
-            onClick={() => openModal(index)} 
-            containerRef={containerRef}
-          />
+          <div key={`${project.id || project._id}-${index}`} className="snap-center shrink-0">
+            <ProjectCard 
+              project={project} 
+              onClick={() => openModal(index)} 
+            />
+          </div>
         ))}
       </div>
     </div>
@@ -88,20 +88,21 @@ export default function ProjectCarousel() {
   const [projects, setProjects] = useState<any[]>([]);
 
   useEffect(() => {
-    client.fetch(`*[_type == "project"] | order(year desc) {
-      _id,
-      title,
-      role,
-      category,
-      year,
-      "videoUrl": videoFile.asset->url,
-      "coverImageUrl": coverImage.asset->url,
-      externalUrl
-    }`).then(data => {
+    supabase.from('projects').select('*').order('year', { ascending: false }).then(({ data }) => {
+      if (!data) return;
+      // Remap the properties to match the frontend expectations originally set by Sanity
+      const mappedData = data.map(p => ({
+        ...p,
+        _id: p.id,
+        videoUrl: p.video_url,
+        coverImageUrl: p.thumbnail_url,
+        externalUrl: p.external_url
+      }));
+
       // Robust sorting for Prada
-      const prada = data.find((p: any) => p.title.toUpperCase().includes('PRADA'));
-      const others = data.filter((p: any) => !p.title.toUpperCase().includes('PRADA'));
-      const sorted = prada ? [prada, ...others] : data;
+      const prada = mappedData.find((p: any) => p.title.toUpperCase().includes('PRADA'));
+      const others = mappedData.filter((p: any) => !p.title.toUpperCase().includes('PRADA'));
+      const sorted = prada ? [prada, ...others] : mappedData;
       setProjects([...sorted, ...sorted, ...sorted]);
     });
   }, []);

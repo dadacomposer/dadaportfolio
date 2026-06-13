@@ -1,36 +1,28 @@
-import { createClient } from 'next-sanity';
 import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
-  const client = createClient({
-    projectId: '4o79sm04',
-    dataset: 'production',
-    apiVersion: '2023-05-03',
-    token: process.env.SANITY_WRITE_TOKEN,
-    useCdn: false,
-  });
-
   try {
     const body = await req.json();
     
-    const result = await client.create({
-      _type: 'contact',
+    // We map the payload from the frontend to our new Supabase columns
+    // We provide fallbacks for the required name and email columns
+    const { error, data } = await supabase.from('contacts').insert([{
+      name: body.identity || 'Unknown',
+      email: body.email || 'No email',
+      message: body.message || '',
       identity: body.identity,
-      projectName: body.projectName,
+      project_name: body.projectName,
       needs: body.needs,
       budget: body.budget,
-      email: body.email,
       phone: body.phone,
-      message: body.message,
-      submittedAt: new Date().toISOString(),
-    });
+    }]).select('id').single();
 
-    // If you also want to send an email notification, you could do it here
-    // using Resend or a similar service.
+    if (error) throw error;
 
-    return NextResponse.json({ success: true, id: result._id });
+    return NextResponse.json({ success: true, id: data.id });
   } catch (error: any) {
     console.error('Submission error:', error);
     return NextResponse.json(
