@@ -74,13 +74,6 @@ export default function RootLayout({
         </Script>
         
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-EDB2904MLN');
-          `}
-        </Script>
         <GlobalGrid />
         <AudioProvider>
           <Navbar />
