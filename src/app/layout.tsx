@@ -59,13 +59,21 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} scroll-smooth`}>
       <body className="flex flex-col min-h-screen bg-deepblack text-white relative font-sans transition-colors duration-500">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-        {/* Google Analytics */}
+        {/* Google Analytics - Moved outside ThemeProvider to fix hydration error */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-EDB2904MLN"
           strategy="afterInteractive"
         />
         <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-EDB2904MLN');
+          `}
+        </Script>
+        
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}

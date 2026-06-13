@@ -1,21 +1,19 @@
-import { client } from '@/sanity/lib/client';
+import { supabase } from '@/lib/supabase';
 import TrackList from '@/components/TrackList';
 import Link from 'next/link';
 import * as motion from 'framer-motion/client';
 
 async function getTracks() {
-  const query = `*[_type == "track"] | order(title asc) {
-    _id,
-    title,
-    category,
-    year,
-    duration,
-    bpm,
-    description,
-    previewStart,
-    "url": audioFile.asset->url
-  }`;
-  return await client.fetch(query);
+  const { data } = await supabase.from('tracks').select('*').order('created_at', { ascending: false });
+  if (!data) return [];
+  
+  // Remap to match what TrackList expects (originally designed for Sanity/Cloudinary combo)
+  return data.map(t => ({
+    _id: t.id,
+    title: t.title,
+    url: t.audio_url,
+    previewStart: t.preview_start || 0
+  }));
 }
 
 export default async function ListenPage() {

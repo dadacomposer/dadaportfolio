@@ -1,6 +1,5 @@
 'use client';
 import React, { createContext, useContext, useState, ReactNode, useRef, useEffect } from 'react';
-import { client } from '@/sanity/lib/client';
 
 interface AudioContextType {
   isIslandVisible: boolean;
