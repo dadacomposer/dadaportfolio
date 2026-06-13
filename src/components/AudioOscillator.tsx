@@ -4,20 +4,22 @@ import { motion } from 'framer-motion';
 import { useAudio } from '@/context/AudioContext';
 
 interface Particle {
-  angle: number;
-  radius: number;
-  speed: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  size: number;
+  baseSize: number;
   color: string;
-  length: number;
-  thickness: number;
-  baseRadius: number;
+  alpha: number;
+  phase: number;
+  wobbleSpeed: number;
 }
 
 export default function AudioOscillator() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { isPlaying, analyzerData } = useAudio();
   
-  // Use refs to access latest values in the animation loop without restarting effect
   const isPlayingRef = useRef(isPlaying);
   const analyzerDataRef = useRef(analyzerData);
 
@@ -35,7 +37,6 @@ export default function AudioOscillator() {
     let animationFrameId: number;
     let mouseX = window.innerWidth / 2;
     let mouseY = window.innerHeight / 2;
-    let time = 0;
 
     const resize = () => {
       canvas.width = window.innerWidth;
@@ -50,89 +51,88 @@ export default function AudioOscillator() {
     };
     window.addEventListener('mousemove', handleMouseMove);
 
-    const colors = ['#3b82f6', '#60a5fa', '#ffffff', '#93c5fd'];
-    const particles: Particle[] = Array.from({ length: 140 }).map(() => {
-      const angle = Math.random() * Math.PI * 2;
-      const radius = Math.random() * Math.max(window.innerWidth, window.innerHeight) * 0.8;
+    // Alpha-bracketed RGBA colors to allow easy alpha changes
+    const colors = [
+      'rgba(59, 130, 246, ',  // Accent blue
+      'rgba(96, 165, 250, ',  // Light blue
+      'rgba(255, 255, 255, ', // White
+      'rgba(147, 197, 253, '  // Soft blue
+    ];
+
+    const particles: Particle[] = Array.from({ length: 45 }).map(() => {
+      const size = Math.random() * 2.8 + 0.8; // smaller: between 0.8px and 3.6px
       return {
-        angle,
-        radius,
-        baseRadius: radius,
-        speed: (Math.random() * 0.1 + 0.02) * (Math.random() > 0.5 ? 1 : -1),
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        vx: (Math.random() * 0.08 - 0.04), // much slower drift
+        vy: -(Math.random() * 0.12 + 0.04), // much slower upward float
+        size,
+        baseSize: size,
         color: colors[Math.floor(Math.random() * colors.length)],
-        length: Math.random() * 5 + 2,
-        thickness: Math.random() * 1.2 + 0.5,
+        alpha: Math.random() * 0.25 + 0.08, // baseline opacity between 0.08 and 0.33
+        phase: Math.random() * Math.PI * 2,
+        wobbleSpeed: Math.random() * 0.015 + 0.003,
       };
     });
 
     let currentMouseX = window.innerWidth / 2;
     let currentMouseY = window.innerHeight / 2;
     let audioSmooth = 0;
-    let audioActiveMultiplier = 0; // New multiplier for smooth state transition
 
     const draw = () => {
-      time += 0.005;
-      
-      // Extreme mouse smoothing (high inertia) - even slower now
-      const targetMouseX = window.innerWidth / 2 + (mouseX - window.innerWidth / 2) * 0.15;
-      const targetMouseY = window.innerHeight / 2 + (mouseY - window.innerHeight / 2) * 0.15;
-      currentMouseX += (targetMouseX - currentMouseX) * 0.003;
-      currentMouseY += (targetMouseY - currentMouseY) * 0.003;
+      // Smooth mouse coordinates
+      currentMouseX += (mouseX - currentMouseX) * 0.05;
+      currentMouseY += (mouseY - currentMouseY) * 0.05;
 
-      // Smoothly transition the active state multiplier (fade in/out over ~2 seconds)
-      const targetMultiplier = isPlayingRef.current ? 1 : 0;
-      audioActiveMultiplier += (targetMultiplier - audioActiveMultiplier) * 0.02;
-
-      // Calculate real-time audio power from analyzer
+      // Smooth audio power
       const currentPower = analyzerDataRef.current.reduce((a, b) => a + b, 0) / 8;
-      audioSmooth += (currentPower - audioSmooth) * 0.15; 
+      audioSmooth += (currentPower - audioSmooth) * 0.12; 
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const centerX = currentMouseX;
-      const centerY = currentMouseY;
-
-      // Use audioActiveMultiplier for all audio-driven expansions
-      const audioExpansion = audioActiveMultiplier * audioSmooth * 250;
-      const pulse = audioActiveMultiplier * Math.sin(time * 5) * 8;
-
-      particles.forEach((p, i) => {
-        p.angle += p.speed * 0.0003;
+      particles.forEach((p) => {
+        // 1. Calculate drift speeds (increase when music is active) - lower multiplier
+        const speedMultiplier = 1 + audioSmooth * 0.8;
         
-        const r = p.baseRadius + audioExpansion + pulse;
+        p.phase += p.wobbleSpeed;
+        const wobble = Math.sin(p.phase) * (0.08 + audioSmooth * 0.3);
+        
+        p.x += (p.vx * speedMultiplier) + wobble;
+        p.y += (p.vy * speedMultiplier);
 
-        const x = centerX + Math.cos(p.angle) * r;
-        const y = centerY + Math.sin(p.angle) * r;
+        // 2. Interactive mouse repulsion
+        const dx = p.x - currentMouseX;
+        const dy = p.y - currentMouseY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const forceRadius = 160;
+        
+        if (dist < forceRadius) {
+          const force = (forceRadius - dist) / forceRadius;
+          const pushX = (dx / dist) * force * 1.2;
+          const pushY = (dy / dist) * force * 1.2;
+          p.x += pushX;
+          p.y += pushY;
+        }
 
-        // Line length is also smoothed by the active multiplier
-        const dynamicLength = p.length * (1 + audioActiveMultiplier * audioSmooth * 8);
-        const x2 = centerX + Math.cos(p.angle) * (r + dynamicLength);
-        const y2 = centerY + Math.sin(p.angle) * (r + dynamicLength);
+        // Screen wrapping
+        const padding = 30;
+        if (p.x < -padding) p.x = canvas.width + padding;
+        if (p.x > canvas.width + padding) p.x = -padding;
+        if (p.y < -padding) {
+          p.y = canvas.height + padding;
+          p.x = Math.random() * canvas.width;
+        }
+        if (p.y > canvas.height + padding) p.y = -padding;
 
+        // 3. Audio-reactive sizing and opacity - greatly reduced size & opacity bump
+        const dynamicSize = p.baseSize * (1 + audioSmooth * 0.5);
+        const dynamicAlpha = Math.min(0.45, p.alpha * (1 + audioSmooth * 0.4));
+
+        // Draw soft glowing bokeh
         ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x2, y2);
-        ctx.strokeStyle = p.color;
-        ctx.lineWidth = p.thickness;
-        
-        // Sophisticated alpha management
-        let alpha = 0.1;
-        const distFromCenter = r;
-        
-        if (distFromCenter > 50) {
-          alpha = Math.min(0.4, (distFromCenter - 50) / 400);
-        }
-        
-        // Fade out at edges
-        const edge = Math.max(canvas.width, canvas.height) * 0.7;
-        if (distFromCenter > edge) {
-          alpha *= Math.max(0, 1 - ((distFromCenter - edge) / 300));
-        }
-
-        // Boost alpha when music is loud
-        ctx.globalAlpha = isPlayingRef.current ? alpha * (1 + audioSmooth * 2) : alpha * 0.5;
-        
-        ctx.stroke();
+        ctx.arc(p.x, p.y, dynamicSize, 0, Math.PI * 2);
+        ctx.fillStyle = `${p.color}${dynamicAlpha})`;
+        ctx.fill();
       });
 
       animationFrameId = requestAnimationFrame(draw);
@@ -149,7 +149,7 @@ export default function AudioOscillator() {
 
   return (
     <motion.div 
-      className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
+      className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 4 }}

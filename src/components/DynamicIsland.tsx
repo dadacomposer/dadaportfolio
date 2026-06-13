@@ -5,7 +5,7 @@ import { Play, Pause, SkipBack, SkipForward, ChevronDown, X } from 'lucide-react
 import { useAudio } from '@/context/AudioContext';
 
 // ─── Desktop Island (hover-to-expand) ───────────────────────────────────────
-function DesktopIsland() {
+function DesktopIsland({ translateY }: { translateY: number }) {
   const [isHovered, setIsHovered] = useState(false);
   const {
     isPlaying, togglePlay, currentTrackTitle,
@@ -16,7 +16,10 @@ function DesktopIsland() {
   const fmt = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
   return (
-    <div className="fixed bottom-8 left-0 right-0 z-50 flex justify-center px-6 pointer-events-none">
+    <div 
+      className="fixed bottom-8 left-0 right-0 z-50 flex justify-center px-6 pointer-events-none"
+      style={{ transform: translateY !== 0 ? `translateY(${translateY}px)` : undefined }}
+    >
       {/* Invisible Hover Hitbox */}
       <div 
         className="w-full max-w-[900px] h-[64px] flex justify-center items-center pointer-events-auto"
@@ -95,7 +98,7 @@ function DesktopIsland() {
 }
 
 // ─── Mobile Island (Spotify-style bottom sheet) ───────────────────────────────
-function MobileIsland() {
+function MobileIsland({ translateY }: { translateY: number }) {
   const [isOpen, setIsOpen] = useState(false);
   const {
     isPlaying, togglePlay, currentTrackTitle,
@@ -110,15 +113,19 @@ function MobileIsland() {
       {/* ── Mini Bar ── */}
       <AnimatePresence>
         {!isOpen && (
-          <motion.div
-            key="minibar"
-            initial={{ y: 100 }}
-            animate={{ y: 0 }}
-            exit={{ y: 100 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed bottom-0 left-0 right-0 z-50 px-3 pb-4"
-            onClick={() => setIsOpen(true)}
+          <div 
+            className="fixed bottom-0 left-0 right-0 z-50 px-3 pb-4 pointer-events-none"
+            style={{ transform: translateY !== 0 ? `translateY(${translateY}px)` : undefined }}
           >
+            <motion.div
+              key="minibar"
+              initial={{ y: 100 }}
+              animate={{ y: 0 }}
+              exit={{ y: 100 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="w-full pointer-events-auto"
+              onClick={() => setIsOpen(true)}
+            >
             <div className="bg-deepblack/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.4)] px-4 py-3 flex items-center gap-3">
               {/* Artwork */}
               <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 overflow-hidden flex-shrink-0">
@@ -151,7 +158,8 @@ function MobileIsland() {
             <div className="mt-1 mx-2 h-[2px] bg-white/5 rounded-full overflow-hidden">
               <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
             </div>
-          </motion.div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
@@ -249,6 +257,7 @@ function MobileIsland() {
 export default function DynamicIsland() {
   const { isIslandVisible } = useAudio();
   const [isMobile, setIsMobile] = useState(false);
+  const [translateY, setTranslateY] = useState(0);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -257,7 +266,39 @@ export default function DynamicIsland() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const footer = document.querySelector('footer');
+      if (!footer) {
+        setTranslateY(0);
+        return;
+      }
+      
+      const docHeight = document.documentElement.scrollHeight;
+      const windowHeight = window.innerHeight;
+      const scrollPos = window.scrollY;
+      
+      const distanceToBottom = docHeight - (scrollPos + windowHeight);
+      const footerHeight = footer.offsetHeight;
+      
+      if (distanceToBottom < footerHeight) {
+        setTranslateY(-(footerHeight - distanceToBottom));
+      } else {
+        setTranslateY(0);
+      }
+    };
+    
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, []);
+
   if (!isIslandVisible) return null;
 
-  return isMobile ? <MobileIsland /> : <DesktopIsland />;
+  return isMobile ? <MobileIsland translateY={translateY} /> : <DesktopIsland translateY={translateY} />;
 }

@@ -33,6 +33,18 @@ export default function Footer() {
             href="https://calendly.com/dadacomposer/30min" 
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => {
+              fetch('/api/notify-slack', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  trackTitle: 'Calendly Link',
+                  commentText: '📅 *Book a Call Clicked!* A visitor clicked the Calendly booking link in the website footer.',
+                  author: 'Website Visitor',
+                  playlistTitle: 'Footer Link'
+                })
+              }).catch(err => console.error(err));
+            }}
             className="text-xs tracking-widest uppercase text-deepblack bg-white px-6 py-3 mt-4 rounded-xl font-light hover:bg-accent transition-colors inline-block text-center"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -42,8 +54,13 @@ export default function Footer() {
         </div>
 
       </div>
-      <div className="max-w-4xl mx-auto px-6 mt-12 pt-6 border-t border-white/5 flex flex-col md:flex-row justify-between text-xs text-gray-600">
+      <div className="max-w-4xl mx-auto px-6 mt-12 pt-6 border-t border-white/5 flex flex-col md:flex-row justify-between items-center text-xs text-gray-600 gap-4">
         <span>© {new Date().getFullYear()} Daniel Angelucci. All rights reserved.</span>
+        <div className="flex gap-4">
+          <Link href="/privacy" className="hover:text-accent transition-colors">Privacy Policy</Link>
+          <span>•</span>
+          <Link href="/terms" className="hover:text-accent transition-colors">Terms & Conditions</Link>
+        </div>
         <span>Made for Sonic Minimalism.</span>
       </div>
     </footer>

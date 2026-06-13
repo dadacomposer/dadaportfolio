@@ -168,6 +168,18 @@ export default function PricingPage() {
               href="https://calendly.com/dadacomposer/30min" 
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => {
+                fetch('/api/notify-slack', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    trackTitle: 'Calendly Link',
+                    commentText: '📅 *Book a Call Clicked!* A visitor clicked the Calendly booking link on the pricing page quote card.',
+                    author: 'Website Visitor',
+                    playlistTitle: 'Pricing Page Quote Card'
+                  })
+                }).catch(err => console.error(err));
+              }}
               className="block w-full text-center bg-white text-deepblack font-light tracking-widest uppercase py-5 rounded-2xl hover:bg-accent hover:text-white transition-all text-sm shadow-xl"
             >
               Book a Call

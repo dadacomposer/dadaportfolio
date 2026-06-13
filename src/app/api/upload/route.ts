@@ -20,13 +20,14 @@ export async function POST(req: Request) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
+    const isImage = file.type.startsWith('image/');
     // Upload to Cloudinary using a stream
     const uploadResult = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
-          folder: 'dada-composer/audio',
-          resource_type: 'video', // Audio files must be uploaded as 'video' in Cloudinary
-          public_id: title.toLowerCase().replace(/\s+/g, '-'),
+          folder: isImage ? 'dada-composer/artwork' : 'dada-composer/audio',
+          resource_type: isImage ? 'image' : 'video', // Audio files must be uploaded as 'video' in Cloudinary
+          public_id: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
           context: `title=${title}`
         },
         (error, result) => {

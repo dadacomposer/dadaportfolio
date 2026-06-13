@@ -55,10 +55,10 @@ export default function Home() {
 
   return (
     <div className="flex flex-col items-center w-full overflow-hidden relative" ref={containerRef}>
+      <AudioOscillator />
       
       {/* Hero Wrapper */}
-      <div id="hero" className="w-full relative min-h-[70vh] flex flex-col justify-center items-center overflow-hidden text-center">
-        <AudioOscillator />
+      <div id="hero" className="w-full relative min-h-[70vh] flex flex-col justify-center items-center text-center">
         
         <motion.section 
           className="w-full max-w-5xl mx-auto px-6 relative z-10 flex flex-col items-center"
@@ -69,7 +69,7 @@ export default function Home() {
             className="flex items-baseline gap-0 mb-2 text-white/90"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.2 }}
+            transition={{ duration: 0.4, delay: 0 }}
           >
             <div className="flex items-baseline justify-center">
               <span className="text-2xl font-bold tracking-tighter text-white">DADA</span>
@@ -81,80 +81,89 @@ export default function Home() {
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.2, delay: 0.8, ease: [0.33, 1, 0.68, 1] }}
+            transition={{ duration: 0.5, delay: 0.1, ease: [0.33, 1, 0.68, 1] }}
             className="text-4xl md:text-6xl lg:text-7xl font-light tracking-tight leading-[1.1] mb-10 text-white/80 max-w-4xl flex flex-col items-center"
           >
              High-end audio post-production & scoring
           </motion.h1>
 
           <motion.div 
+            layout="position"
             className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-2"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 2.5 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <div 
-              className="relative flex items-center gap-3"
+            <motion.div 
+              layout="position"
+              className="flex items-center gap-3"
               onMouseEnter={() => setIsHeroHovered(true)}
               onMouseLeave={() => setIsHeroHovered(false)}
             >
-              <AudioBloom active={isPlaying} isHovered={isHeroHovered} />
-              
-              <motion.button 
-                onClick={handleListenClick}
-                initial={false}
-                animate={{
-                  backgroundColor: isPlaying ? "rgba(var(--accent-rgb), 1)" : "rgba(255, 255, 255, 1)",
-                  color: isPlaying ? "#ffffff" : "#000000",
-                  borderColor: isPlaying ? "rgba(var(--accent-rgb), 0.5)" : "rgba(255, 255, 255, 1)",
-                }}
-                transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
-                className="font-light tracking-widest uppercase px-8 py-3.5 rounded-xl text-sm flex items-center justify-center min-w-[200px] shadow-lg relative z-10 border"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                layout
+              <motion.div 
+                layout="position"
+                className="relative"
+                transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
               >
-                <AnimatePresence mode="wait">
-                  <motion.span 
-                    key={isPlaying ? "playing" : "stopped"}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.3 }}
-                    className="flex items-center gap-2"
-                  >
-                    {!isPlaying && <Play className="w-4 h-4" fill="currentColor" />}
-                    {isPlaying ? "View Full Library" : "Tap to listen"}
-                    {!isPlaying && (
-                      <span
-                        onClick={handleShuffleClick}
-                        className="ml-2 p-1 rounded-lg bg-black/10 hover:bg-black/20 transition-colors cursor-pointer"
-                        title="Play random track"
-                      >
-                        <Shuffle className="w-3.5 h-3.5" />
-                      </span>
-                    )}
-                  </motion.span>
-                </AnimatePresence>
-              </motion.button>
+                <AudioBloom active={isPlaying} isHovered={isHeroHovered} />
+                
+                <motion.button 
+                  onClick={handleListenClick}
+                  initial={false}
+                  animate={{
+                    backgroundColor: isPlaying ? "#3b82f6" : "#ffffff",
+                    color: isPlaying ? "#ffffff" : "#000000",
+                    borderColor: isPlaying ? "rgba(59, 130, 246, 0.5)" : "#ffffff",
+                  }}
+                  transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
+                  className="font-light tracking-widest uppercase px-5 py-3.5 rounded-xl text-sm flex items-center justify-center w-[250px] shadow-lg relative z-10 border cursor-pointer"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <AnimatePresence mode="wait">
+                    <motion.span 
+                      key={isPlaying ? "playing" : "stopped"}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex items-center justify-center gap-2 w-full"
+                    >
+                      {!isPlaying && <Play className="w-4 h-4 shrink-0" fill="currentColor" />}
+                      <span>{isPlaying ? "View Full Library" : "Tap to listen"}</span>
+                      {!isPlaying && (
+                        <span
+                          onClick={handleShuffleClick}
+                          className="ml-1.5 p-1 rounded-lg bg-black/10 hover:bg-black/20 transition-colors cursor-pointer shrink-0"
+                          title="Play random track"
+                        >
+                          <Shuffle className="w-3.5 h-3.5" />
+                        </span>
+                      )}
+                    </motion.span>
+                  </AnimatePresence>
+                </motion.button>
+              </motion.div>
 
               <AnimatePresence>
                 {isPlaying && (
                   <motion.button
+                    layout="position"
                     initial={{ opacity: 0, scale: 0.8, x: -10 }}
                     animate={{ opacity: 1, scale: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.8, x: -10 }}
+                    transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
                     onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                    className="w-12 h-12 flex items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white hover:bg-white/10 hover:border-white/20 transition-all z-10 group"
+                    className="w-12 h-12 flex items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white hover:bg-white/10 hover:border-white/20 transition-all z-10 group cursor-pointer"
                     title="Stop Music"
                   >
                     <Square size={14} fill="currentColor" className="group-hover:scale-110 transition-transform" />
                   </motion.button>
                 )}
               </AnimatePresence>
-            </div>
+            </motion.div>
 
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <motion.div layout="position" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Link href="/pricing" className="block bg-deepblack/30 border border-white/5 text-white font-light tracking-widest uppercase px-8 py-3.5 rounded-xl hover:bg-white/10 hover:border-accent/50 transition-colors text-sm min-w-[200px] backdrop-blur-md text-center">
                 See rates
               </Link>
@@ -164,7 +173,7 @@ export default function Home() {
       </div>
 
       {/* Client Marquee Strip */}
-      <section className="w-full py-2 mt-[-5vh] relative z-20">
+      <section className="w-full py-2 mt-16 md:mt-28 relative z-20">
         <div 
           className="w-full py-4 overflow-hidden relative"
           style={{ 
@@ -180,21 +189,21 @@ export default function Home() {
             .animate-marquee {
               display: flex;
               width: max-content;
-              animation: marquee 65s linear infinite;
+              animation: marquee 120s linear infinite;
               will-change: transform;
             }
           `}</style>
 
           <div className="animate-marquee">
             {[0, 1, 2, 3].map((loop) => (
-              <div key={loop} className="flex items-center gap-20 md:gap-40 px-10 md:px-20 shrink-0">
-                {[1, 2, 7, 9, 10].map((num) => (
-                  <div key={num} className="h-10 md:h-12 w-32 md:w-56 shrink-0 flex items-center justify-center">
+              <div key={loop} className="flex items-center gap-32 md:gap-64 px-16 md:px-32 shrink-0">
+                {[1, 2, 9].map((num) => (
+                  <div key={num} className="h-6 md:h-8 w-20 md:w-36 shrink-0 flex items-center justify-center">
                     <img
                       src={`/clients/clean_${num}.png`}
                       alt={`Client ${num}`}
                       style={{ filter: 'invert(var(--logo-invert))' }}
-                      className="max-h-full max-w-full object-contain opacity-70 hover:opacity-100 transition-opacity duration-500"
+                      className="max-h-full max-w-full object-contain opacity-75 hover:opacity-100 transition-opacity duration-500"
                     />
                   </div>
                 ))}
@@ -213,7 +222,7 @@ export default function Home() {
       >
         <div className="flex flex-col items-center mb-16">
           <motion.p variants={blurReveal} className="text-xs font-light tracking-[0.4em] uppercase text-accent mb-4">Core Services</motion.p>
-          <motion.h2 variants={blurReveal} className="text-3xl md:text-5xl font-light tracking-tight text-white text-center">Sculpting soundscapes with surgical precision.</motion.h2>
+          <motion.h2 variants={blurReveal} className="text-3xl md:text-5xl font-light tracking-tight text-white text-center">Soundscapes and scores, crafted for visual stories.</motion.h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -267,6 +276,18 @@ export default function Home() {
               <Link 
                 href="https://calendly.com/dadacomposer/30min" 
                 target="_blank"
+                onClick={() => {
+                  fetch('/api/notify-slack', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      trackTitle: 'Calendly Link',
+                      commentText: '📅 *Book a Call Clicked!* A visitor clicked the Calendly booking link on the homepage CTA.',
+                      author: 'Website Visitor',
+                      playlistTitle: 'Homepage CTA'
+                    })
+                  }).catch(err => console.error(err));
+                }}
                 className="bg-white text-deepblack font-light tracking-widest uppercase px-10 py-4 rounded-xl hover:bg-accent hover:text-white transition-colors text-sm shadow-lg border border-white"
               >
                 Book a Call

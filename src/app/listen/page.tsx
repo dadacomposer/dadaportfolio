@@ -3,8 +3,10 @@ import TrackList from '@/components/TrackList';
 import Link from 'next/link';
 import * as motion from 'framer-motion/client';
 
+export const dynamic = 'force-dynamic';
+
 async function getTracks() {
-  const { data } = await supabase.from('tracks').select('*').order('created_at', { ascending: false });
+  const { data } = await supabase.from('tracks').select('*').eq('is_hidden', false).order('created_at', { ascending: false });
   if (!data) return [];
   
   // Remap to match what TrackList expects (originally designed for Sanity/Cloudinary combo)
@@ -12,9 +14,16 @@ async function getTracks() {
     _id: t.id,
     title: t.title,
     url: t.audio_url,
-    previewStart: t.preview_start || 0
+    artwork: t.artwork_url,
+    previewStart: t.preview_start || 0,
+    artist: t.artist,
+    album: t.album,
+    bpm: t.bpm,
+    duration: t.duration,
+    category: t.category
   }));
 }
+
 
 export default async function ListenPage() {
   const tracks = await getTracks();
@@ -31,27 +40,13 @@ export default async function ListenPage() {
       >
         <p className="text-[10px] font-light tracking-[0.5em] uppercase text-accent mb-4">Sonic Archive</p>
         <h1 className="text-5xl md:text-8xl font-light tracking-tighter text-white leading-none mb-8">Listen.</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 border-t border-white/5 pt-10">
+        <div className="border-t border-white/5 pt-10 max-w-2xl">
           <p className="text-gray-400 font-light leading-relaxed text-sm">
             My sonic philosophy is rooted in the subtraction of the unnecessary. 
             Every frequency must earn its place in the arrangement. From prepared piano 
             to granular synthesis, the goal is to create immersive textures that 
             elevate the visual narrative without overwhelming it.
           </p>
-          <div className="flex flex-col gap-4">
-            <div className="flex justify-between items-end border-b border-white/5 pb-2">
-              <span className="text-[10px] uppercase tracking-widest text-gray-600">Sample Rate</span>
-              <span className="text-xs font-mono text-gray-400">96kHz / 24-bit</span>
-            </div>
-            <div className="flex justify-between items-end border-b border-white/5 pb-2">
-              <span className="text-[10px] uppercase tracking-widest text-gray-600">Formats</span>
-              <span className="text-xs font-mono text-gray-400">Stereo / Atmos / Binaural</span>
-            </div>
-            <div className="flex justify-between items-end border-b border-white/5 pb-2">
-              <span className="text-[10px] uppercase tracking-widest text-gray-600">Delivery</span>
-              <span className="text-xs font-mono text-gray-400">Full Stems / MIDI / Mastered</span>
-            </div>
-          </div>
         </div>
       </motion.div>
 

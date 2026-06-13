@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UploadCloud, CheckCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useToast } from '@/context/ToastContext';
 
 export default function UploadTrackModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onClose: () => void, onSuccess: () => void }) {
   const [file, setFile] = useState<File | null>(null);
@@ -10,10 +11,12 @@ export default function UploadTrackModal({ isOpen, onClose, onSuccess }: { isOpe
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast();
 
   const handleUpload = async () => {
     if (!file || !title) return;
     setUploading(true);
+    showToast('Uploading track to Cloudinary...', 'info');
 
     try {
       // 1. Upload to Cloudinary via our Next.js API
@@ -40,6 +43,7 @@ export default function UploadTrackModal({ isOpen, onClose, onSuccess }: { isOpe
       if (error) throw error;
 
       setSuccess(true);
+      showToast('Track uploaded successfully!', 'success');
       setTimeout(() => {
         setSuccess(false);
         setFile(null);
@@ -50,7 +54,7 @@ export default function UploadTrackModal({ isOpen, onClose, onSuccess }: { isOpe
 
     } catch (err) {
       console.error(err);
-      alert('Upload failed!');
+      showToast('Upload failed!', 'error');
     } finally {
       setUploading(false);
     }

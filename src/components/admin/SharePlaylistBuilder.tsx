@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Link as LinkIcon, Download, Eye, Music, Loader2, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useToast } from '@/context/ToastContext';
 
 export default function SharePlaylistBuilder({ 
   isOpen, 
@@ -19,9 +20,13 @@ export default function SharePlaylistBuilder({
   const [title, setTitle] = useState('');
   const [creating, setCreating] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
+  const { showToast } = useToast();
 
   const handleCreate = async () => {
-    if (!title) return alert('Please enter a title for the playlist');
+    if (!title) {
+      showToast('Please enter a title for the playlist', 'error');
+      return;
+    }
     setCreating(true);
     
     try {
@@ -38,9 +43,10 @@ export default function SharePlaylistBuilder({
       if (error) throw error;
 
       setGeneratedLink(`${window.location.origin}/share/${slug}`);
+      showToast('Playlist created successfully!', 'success');
     } catch (err) {
       console.error(err);
-      alert('Failed to create playlist');
+      showToast('Failed to create playlist', 'error');
     } finally {
       setCreating(false);
     }
@@ -48,7 +54,7 @@ export default function SharePlaylistBuilder({
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(generatedLink);
-    alert('Link copied to clipboard!');
+    showToast('Link copied to clipboard!', 'success');
     onClose();
     clearSelection();
     setTimeout(() => setGeneratedLink(''), 500); // Reset after close

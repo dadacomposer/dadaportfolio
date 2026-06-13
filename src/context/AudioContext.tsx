@@ -1,5 +1,6 @@
 'use client';
 import React, { createContext, useContext, useState, ReactNode, useRef, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 interface AudioContextType {
   isIslandVisible: boolean;
@@ -51,21 +52,57 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const preloadedTrackRef = useRef<any>(null);
 
   useEffect(() => {
-    // Use the static Cloudinary catalog instead of fetching from Sanity
-    import('@/data/cloudinaryTracks').then(({ cloudinaryTracks }) => {
-      setTracks(cloudinaryTracks);
-      tracksRef.current = cloudinaryTracks;
-      
-      // Preload a random track immediately so first play is instant
-      if (cloudinaryTracks.length > 0 && audioRef.current) {
-        const randomIdx = Math.floor(Math.random() * cloudinaryTracks.length);
-        const preloadTrack = cloudinaryTracks[randomIdx];
-        preloadedTrackRef.current = preloadTrack;
-        audioRef.current.src = preloadTrack.url;
-        audioRef.current.preload = 'auto';
-        audioRef.current.load();
+    async function loadTracks() {
+      try {
+        // Fetch all tracks from Supabase
+        const { data, error } = await supabase
+          .from('tracks')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        if (data) {
+          const mapped = data.map(t => ({
+            _id: t.id,
+            title: t.title,
+            url: t.audio_url,
+            artwork: t.artwork_url || `/artworks/${t.title}.jpg`,
+            previewStart: t.preview_start || 0,
+            is_hidden: t.is_hidden || false,
+            artist: t.artist,
+            album: t.album
+          }));
+
+          // Only show non-hidden tracks in the public player list
+          const visibleTracks = mapped.filter(t => !t.is_hidden);
+          setTracks(visibleTracks);
+          tracksRef.current = visibleTracks;
+
+          // Preload a random track immediately so first play is instant
+          if (visibleTracks.length > 0 && audioRef.current) {
+            const randomIdx = Math.floor(Math.random() * visibleTracks.length);
+            const preloadTrack = visibleTracks[randomIdx];
+            preloadedTrackRef.current = preloadTrack;
+            audioRef.current.src = preloadTrack.url;
+            audioRef.current.preload = 'auto';
+            audioRef.current.load();
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch tracks in AudioContext:', err);
+        // Fallback to static cloudinaryTracks if fetch fails
+        import('@/data/cloudinaryTracks').then(({ cloudinaryTracks }) => {
+          const mappedStatic = cloudinaryTracks.map(t => ({
+            ...t,
+            is_hidden: false
+          }));
+          setTracks(mappedStatic);
+          tracksRef.current = mappedStatic;
+        });
       }
-    });
+    }
+
+    loadTracks();
   }, []);
 
   useEffect(() => {
@@ -95,20 +132,34 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     };
 
     const handleLoadedMetadata = () => {
-      if (previewStartRef.current > 0) {
-        audio.currentTime = previewStartRef.current;
-        
-        // Fade in volume after jump
-        audio.volume = 0;
-        let vol = 0;
-        const fadeIn = setInterval(() => {
-          if (vol < 1) {
-            vol += 0.1;
-            audio.volume = Math.min(1, vol);
-          } else {
-            clearInterval(fadeIn);
-          }
-        }, 50);
+      const isSharePage = typeof window !== 'undefined' && window.location.pathname.startsWith('/share/');
+      
+      if (!isSharePage) {
+        // Calculate preview start point: either explicit preview_start, or 35% of duration
+        let startPoint = 0;
+        if (previewStartRef.current > 0) {
+          startPoint = previewStartRef.current;
+        } else if (audio.duration) {
+          startPoint = Math.floor(audio.duration * 0.35);
+        }
+
+        if (startPoint > 0) {
+          audio.currentTime = startPoint;
+          
+          // Fade in volume after jump
+          audio.volume = 0;
+          let vol = 0;
+          const fadeIn = setInterval(() => {
+            if (vol < 1) {
+              vol += 0.1;
+              audio.volume = Math.min(1, vol);
+            } else {
+              clearInterval(fadeIn);
+            }
+          }, 50);
+        } else {
+          audio.volume = 1;
+        }
       } else {
         audio.volume = 1;
       }
@@ -162,6 +213,15 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       const alreadyPreloaded = preloadedTrackRef.current?.url === url;
       if (!alreadyPreloaded) {
         audioRef.current.src = url;
+      } else {
+        // Since it is already preloaded, we must ensure it's seeked to the preview point
+        const isSharePage = typeof window !== 'undefined' && window.location.pathname.startsWith('/share/');
+        if (!isSharePage) {
+          const startPoint = previewStart || (audioRef.current.duration ? Math.floor(audioRef.current.duration * 0.35) : 0);
+          if (startPoint > 0 && Math.abs(audioRef.current.currentTime - startPoint) > 2) {
+            audioRef.current.currentTime = startPoint;
+          }
+        }
       }
       audioRef.current.play().catch(e => console.log('Playback error:', e));
 
@@ -182,8 +242,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   };
   const togglePlay = () => {
     if (!audioRef.current) return;
-    if (!currentTrackUrl && firstTrack) {
-      playTrack(firstTrack.url, firstTrack.title, firstTrack.artwork, firstTrack.previewStart);
+    if (!currentTrackUrl) {
+      const startTrack = preloadedTrackRef.current || firstTrack;
+      if (startTrack) {
+        playTrack(startTrack.url, startTrack.title, startTrack.artwork, startTrack.previewStart);
+      }
       return;
     }
     if (isPlaying) {
