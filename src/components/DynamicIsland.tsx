@@ -30,7 +30,7 @@ function DesktopIsland({ translateY }: { translateY: number }) {
           initial={{ y: 100, opacity: 0 }}
           animate={{
             y: 0, opacity: 1,
-            width: isHovered ? '100%' : '220px',
+            width: isHovered ? '100%' : '240px',
             height: '100%',
           }}
           transition={{ type: 'spring', stiffness: 260, damping: 25, width: { duration: 0.55, ease: [0.23, 1, 0.32, 1] } }}
@@ -40,11 +40,11 @@ function DesktopIsland({ translateY }: { translateY: number }) {
           {!isHovered ? (
             <motion.div key="compact" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="w-full flex items-center justify-between px-6">
-              <div className="flex flex-col min-w-0">
+              <div className="flex flex-col flex-1 min-w-0 pr-3">
                 <span className="text-[10px] font-medium text-white truncate uppercase tracking-widest">{currentTrackTitle}</span>
                 <span className="text-[8px] text-accent/60 uppercase tracking-[0.2em] font-light">Playing</span>
               </div>
-              <div className="flex items-center gap-[3px] h-4">
+              <div className="flex items-center gap-[3px] h-4 shrink-0">
                 {analyzerData.map((val, i) => (
                   <motion.div key={i} className="w-[1.5px] bg-accent rounded-full"
                     animate={{ height: isPlaying ? `${Math.max(20, val * 100)}%` : '20%' }}
