@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
 import ShareCommentSystem from '@/components/admin/ShareCommentSystem';
 
@@ -6,11 +6,6 @@ export const dynamic = 'force-dynamic';
 
 // Fetch data server-side
 async function getPlaylist(slug: string) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
   const { data: playlist } = await supabase
     .from('playlists')
     .select('*')
