@@ -5,6 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
+      disallow: ['/admin', '/admin/dashboard'],
     },
     sitemap: 'https://dadacomposer.com/sitemap.xml',
   };
