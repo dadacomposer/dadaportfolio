@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Download, Copy, Send, CheckCircle, Music, Loader2, FileArchive, Link as LinkIcon } from 'lucide-react';
+import { Play, Pause, Download, Copy, Send, CheckCircle, Music, Loader2, FileArchive, Link as LinkIcon, RotateCcw, Square, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/context/ToastContext';
@@ -26,9 +26,59 @@ export default function ShareCommentSystem({
   const [saved, setSaved] = useState(false);
   const [isApproved, setIsApproved] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
+  const [reviewStatus, setReviewStatus] = useState<'approved' | 'rejected' | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { showToast } = useToast();
 
+  // Deterministic waveform generator based on track title
+  const generateWaveform = (title: string) => {
+    const barsCount = 50;
+    const heights = [];
+    for (let i = 0; i < barsCount; i++) {
+      const charCode = title.charCodeAt(i % title.length) || 64;
+      const height = 15 + ((charCode * (i + 3)) % 71);
+      heights.push(height);
+    }
+    return heights;
+  };
+
+  const waveformHeights = useRef<number[]>([]);
+  if (waveformHeights.current.length === 0) {
+    waveformHeights.current = generateWaveform(track.title);
+  }
+
+  const handleWaveformClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const width = rect.width;
+    const percentage = clickX / width;
+    const seekTime = percentage * duration;
+    if (audioRef.current && !isNaN(seekTime)) {
+      audioRef.current.currentTime = seekTime;
+      setCurrentTime(seekTime);
+    }
+  };
+
+  const handleReplay = () => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play();
+      setIsPlaying(true);
+      if (typeof window !== 'undefined') {
+        (window as any).activeTrackId = track.id;
+      }
+    }
+  };
+
+  const handleStop = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setIsPlaying(false);
+    }
+  };
+
+  // Load initial status and set up event listeners
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -39,22 +89,137 @@ export default function ShareCommentSystem({
     audio.addEventListener('timeupdate', updateTime);
     audio.addEventListener('loadedmetadata', updateDuration);
 
+    const checkExistingStatus = async () => {
+      try {
+        const { data } = await supabase
+          .from('comments')
+          .select('text')
+          .eq('playlist_id', playlistId)
+          .eq('track_id', track.id)
+          .or('text.ilike.★ APPROVED:%,text.ilike.✗ REJECTED:%');
+        
+        if (data && data.length > 0) {
+          if (data[0].text.startsWith('★ APPROVED:')) {
+            setReviewStatus('approved');
+          } else if (data[0].text.startsWith('✗ REJECTED:')) {
+            setReviewStatus('rejected');
+          }
+        }
+      } catch (err) {
+        console.error('Error checking existing review status:', err);
+      }
+    };
+    
+    checkExistingStatus();
+
+    // Auto-set the first track as active for spacebar playback
+    if (typeof window !== 'undefined') {
+      if (index === 0 && !(window as any).activeTrackId) {
+        (window as any).activeTrackId = track.id;
+      }
+    }
+
     return () => {
       audio.removeEventListener('timeupdate', updateTime);
       audio.removeEventListener('loadedmetadata', updateDuration);
     };
-  }, []);
+  }, [playlistId, track.id, index]);
+
+  // Global Spacebar Keydown Handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        const activeEl = document.activeElement;
+        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+          return; // Allow spaces in text input fields
+        }
+
+        e.preventDefault();
+
+        if (typeof window !== 'undefined' && (window as any).activeTrackId === track.id) {
+          togglePlay();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPlaying, track.id]);
 
   const togglePlay = () => {
     if (audioRef.current) {
+      if (typeof window !== 'undefined') {
+        (window as any).activeTrackId = track.id;
+      }
+
       if (isPlaying) {
         audioRef.current.pause();
       } else {
         // Stop all other audio elements on the page
-        document.querySelectorAll('audio').forEach(el => el.pause());
+        document.querySelectorAll('audio').forEach(el => {
+          if (el !== audioRef.current) {
+            el.pause();
+          }
+        });
         audioRef.current.play();
       }
       setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleReviewStatus = async (status: 'approved' | 'rejected') => {
+    showToast(`Marking track as ${status}...`, 'info');
+    const statusText = status === 'approved' 
+      ? `★ APPROVED: "${track.title}" approved by reviewer.` 
+      : `✗ REJECTED: "${track.title}" rejected by reviewer.`;
+
+    try {
+      // 1. Search for existing status comments
+      const { data: existing } = await supabase
+        .from('comments')
+        .select('id')
+        .eq('playlist_id', playlistId)
+        .eq('track_id', track.id)
+        .or('text.ilike.★ APPROVED:%,text.ilike.✗ REJECTED:%');
+
+      if (existing && existing.length > 0) {
+        // Update the existing comment
+        const { error } = await supabase
+          .from('comments')
+          .update({ text: statusText, author: 'Musicvine Reviewer' })
+          .eq('id', existing[0].id);
+        if (error) throw error;
+      } else {
+        // Insert new comment
+        const { error } = await supabase
+          .from('comments')
+          .insert([{
+            playlist_id: playlistId,
+            track_id: track.id,
+            author: 'Musicvine Reviewer',
+            text: statusText
+          }]);
+        if (error) throw error;
+      }
+
+      setReviewStatus(status);
+      showToast(`Track successfully ${status}!`, 'success');
+
+      // Trigger Slack Notification
+      fetch('/api/notify-slack', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trackTitle: track.title,
+          commentText: statusText,
+          author: 'Musicvine Reviewer',
+          playlistTitle: playlistTitle
+        })
+      }).catch(err => console.error('Slack notify error:', err));
+
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update status', 'error');
     }
   };
 
@@ -180,7 +345,7 @@ export default function ShareCommentSystem({
   };
 
   return (
-    <div className="track-container bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 backdrop-blur-sm transition-all hover:bg-white/10 hover:border-white/20 relative overflow-hidden group">
+    <div className="track-container max-w-2xl mx-auto bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 backdrop-blur-sm transition-all hover:bg-white/10 hover:border-white/20 relative overflow-hidden group">
       
       {/* Decorative Glow */}
       {isPlaying && (
@@ -238,19 +403,58 @@ export default function ShareCommentSystem({
             </button>
           </div>
 
-          {/* Custom Sleek Progress Bar */}
-          <div className="space-y-1">
-            <input 
-              type="range" 
-              min={0} 
-              max={duration || 100} 
-              value={currentTime} 
-              onChange={handleSeek}
-              className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-accent transition-all hover:h-1.5 focus:outline-none"
-            />
-            <div className="flex justify-between text-[10px] font-mono text-white/40 uppercase tracking-widest">
-              <span>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration)}</span>
+          {/* Spotify-style Controls Group and Waveform */}
+          <div className="flex flex-col md:flex-row items-center gap-4 w-full bg-black/20 p-4 rounded-2xl border border-white/5">
+            {/* Spotify-style Controls Group */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={handleReplay}
+                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-white flex items-center justify-center transition-all hover:scale-105 border border-white/5"
+                title="Replay"
+              >
+                <RotateCcw size={14} />
+              </button>
+              <button
+                onClick={togglePlay}
+                className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center transition-all hover:scale-105 shadow-md"
+                title={isPlaying ? "Pause" : "Play"}
+              >
+                {isPlaying ? <Pause size={16} className="fill-black" /> : <Play size={16} className="ml-0.5 fill-black" />}
+              </button>
+              <button
+                onClick={handleStop}
+                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-white flex items-center justify-center transition-all hover:scale-105 border border-white/5"
+                title="Stop"
+              >
+                <Square size={14} className="fill-white" />
+              </button>
+            </div>
+
+            {/* Waveform Scrubber */}
+            <div className="flex-grow w-full">
+              <div 
+                onClick={handleWaveformClick}
+                className="h-10 flex items-end gap-[3px] cursor-pointer group/wave w-full py-1 relative select-none"
+              >
+                {waveformHeights.current.map((height, i) => {
+                  const progress = duration > 0 ? currentTime / duration : 0;
+                  const isActive = progress >= i / 50;
+                  return (
+                    <div
+                      key={i}
+                      className="flex-grow rounded-sm transition-all duration-150"
+                      style={{
+                        height: `${height}%`,
+                        backgroundColor: isActive ? 'rgb(var(--accent-rgb, 59, 130, 246))' : 'rgba(255, 255, 255, 0.2)',
+                      }}
+                    />
+                  );
+                })}
+              </div>
+              <div className="flex justify-between text-[9px] font-mono text-white/40 uppercase tracking-widest mt-1">
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
+              </div>
             </div>
           </div>
 
@@ -314,10 +518,24 @@ export default function ShareCommentSystem({
                 <span className="text-sm font-semibold text-white">1</span>
               </div>
               <div className="bg-black/30 p-3 rounded-xl border border-white/5 col-span-2 md:col-span-4">
-                <span className="block text-[10px] uppercase tracking-wider text-white/40 mb-1">8. Relevant Keywords</span>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="block text-[10px] uppercase tracking-wider text-white/40">8. Relevant Keywords</span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(track.keywords || "Cinematic, Ambient, Production Music");
+                      showToast('Keywords copied to clipboard!', 'success');
+                    }}
+                    className="p-1 rounded bg-white/5 hover:bg-white/15 transition-all text-white/60 hover:text-white"
+                    title="Copy keywords as comma-separated text"
+                  >
+                    <Copy size={12} />
+                  </button>
+                </div>
                 <div className="flex flex-wrap gap-1.5 mt-1">
                   {(track.keywords || "Cinematic, Ambient, Production Music")
-                    .split(', ')
+                    .split(',')
+                    .map((kw: string) => kw.trim())
+                    .filter(Boolean)
                     .map((kw: string, i: number) => (
                       <span key={i} className="text-[10px] bg-white/10 hover:bg-white/15 text-white/80 px-2 py-0.5 rounded-full border border-white/5 transition-colors">
                         {kw}
@@ -340,6 +558,30 @@ export default function ShareCommentSystem({
               )}
             </div>
             
+            {/* Approve / Reject buttons */}
+            <div className="flex gap-4 mb-3">
+              <button
+                onClick={() => handleReviewStatus('approved')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border text-xs uppercase tracking-wider font-bold transition-all ${
+                  reviewStatus === 'approved'
+                    ? 'bg-green-500/20 border-green-500 text-green-400'
+                    : 'bg-black/30 border-white/10 text-white/60 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <ThumbsUp size={14} /> Approve Track
+              </button>
+              <button
+                onClick={() => handleReviewStatus('rejected')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border text-xs uppercase tracking-wider font-bold transition-all ${
+                  reviewStatus === 'rejected'
+                    ? 'bg-red-500/20 border-red-500 text-red-400'
+                    : 'bg-black/30 border-white/10 text-white/60 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <ThumbsDown size={14} /> Reject Track
+              </button>
+            </div>
+
             <div className="relative">
               <textarea 
                 value={comment}

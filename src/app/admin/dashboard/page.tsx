@@ -14,6 +14,10 @@ export default function AdminDashboard() {
   const [tracks, setTracks] = useState<any[]>([]);
   const [selectedTracks, setSelectedTracks] = useState<string[]>([]);
   const [comments, setComments] = useState<any[]>([]);
+  const [playlists, setPlaylists] = useState<any[]>([]);
+  const [activePlaylistId, setActivePlaylistId] = useState<string>('');
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -21,10 +25,11 @@ export default function AdminDashboard() {
   const router = useRouter();
   const { showToast } = useToast();
 
-  // Load tracks & comments
+  // Load tracks, comments & playlists
   useEffect(() => {
     fetchTracks();
     fetchComments();
+    fetchPlaylists();
 
     // Subscribe to Postgres changes on the comments table for real-time updates
     const subscription = supabase
@@ -45,6 +50,17 @@ export default function AdminDashboard() {
   const fetchTracks = async () => {
     const { data } = await supabase.from('tracks').select('*').order('created_at', { ascending: false });
     if (data) setTracks(data);
+  };
+
+  const fetchPlaylists = async () => {
+    const { data } = await supabase.from('playlists').select('*').order('created_at', { ascending: false });
+    if (data) {
+      setPlaylists(data);
+      // Auto-select the first playlist as active chat if not already set
+      if (data.length > 0) {
+        setActivePlaylistId(data[0].id);
+      }
+    }
   };
 
   const fetchComments = async () => {
@@ -83,6 +99,43 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleSendReply = async () => {
+    if (!replyText.trim() || !activePlaylistId) return;
+    setSendingReply(true);
+    try {
+      const { error } = await supabase.from('comments').insert([{
+        playlist_id: activePlaylistId,
+        track_id: null,
+        author: 'DADA',
+        text: replyText
+      }]);
+
+      if (error) throw error;
+      setReplyText('');
+      showToast('Reply sent to Lia!', 'success');
+      fetchComments();
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to send reply', 'error');
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    const confirmDelete = window.confirm('Are you sure you want to delete this comment?');
+    if (!confirmDelete) return;
+    try {
+      const { error } = await supabase.from('comments').delete().eq('id', commentId);
+      if (error) throw error;
+      showToast('Comment deleted', 'success');
+      fetchComments();
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to delete comment', 'error');
+    }
+  };
+
   const handleQuickShare = async (track: any) => {
     try {
       const slug = Math.random().toString(36).substring(2, 10);
@@ -115,6 +168,7 @@ export default function AdminDashboard() {
       } catch (slackErr) {
         console.error('Failed to notify Slack:', slackErr);
       }
+      fetchPlaylists(); // Refresh playlist dropdown
     } catch (err) {
       console.error(err);
       showToast('Failed to generate quick share link', 'error');
@@ -287,31 +341,137 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Feedback Feed (Right Column) */}
+          {/* Real-time Chat Log Sidebar (Right Column) */}
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 h-fit backdrop-blur-sm">
             <h2 className="text-xl font-bold uppercase tracking-tighter mb-6 flex items-center gap-2">
               <MessageSquare size={20} className="text-accent" />
-              Lia's Feedback Feed
+              Playlist Chat & Log
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
             </h2>
-            
-            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-              {comments.map((comment) => (
-                <div key={comment.id} className="bg-black/30 border border-white/5 p-4 rounded-2xl text-xs space-y-2 hover:border-white/10 transition-colors">
-                  <div className="flex justify-between items-center text-white/40">
-                    <span className="font-bold text-white/60">{comment.author}</span>
-                    <span>{new Date(comment.created_at).toLocaleDateString()}</span>
+
+            {/* Playlist Selector Dropdown */}
+            <div className="mb-4">
+              <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">Select Shared Link / Playlist</label>
+              <select
+                value={activePlaylistId}
+                onChange={(e) => setActivePlaylistId(e.target.value)}
+                className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-accent"
+              >
+                {playlists.map((pl) => (
+                  <option key={pl.id} value={pl.id} className="bg-deepblack text-white">
+                    {pl.title} ({pl.slug})
+                  </option>
+                ))}
+                {playlists.length === 0 && (
+                  <option value="">No playlists shared yet</option>
+                )}
+              </select>
+            </div>
+
+            <div className="border border-white/10 rounded-2xl bg-black/40 flex flex-col h-[400px] overflow-hidden">
+              {/* Chat Message List */}
+              <div className="flex-grow overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/15">
+                {activePlaylistId ? (
+                  comments
+                    .filter(c => c.playlist_id === activePlaylistId)
+                    .slice() // Copy array
+                    .reverse() // Display chronological: oldest at top, newest at bottom
+                    .map((comment) => {
+                      const isMe = comment.author === 'DADA' || comment.author === 'Daniel';
+                      const isSystem = comment.author === 'System Notification';
+                      const isApproval = comment.text.startsWith('★ APPROVED:');
+                      const isRejection = comment.text.startsWith('✗ REJECTED:');
+                      
+                      if (isSystem || isApproval || isRejection) {
+                        return (
+                          <div key={comment.id} className="flex flex-col items-center py-1 group/msg">
+                            <span className={`text-[10px] uppercase tracking-wider px-3 py-1 rounded-full border ${
+                              isApproval 
+                                ? 'bg-green-500/10 text-green-400 border-green-500/20' 
+                                : isRejection 
+                                  ? 'bg-red-500/10 text-red-400 border-red-500/20' 
+                                  : 'bg-white/5 text-white/40 border-white/5'
+                            } flex items-center gap-1.5`}>
+                              {comment.text}
+                              <button 
+                                onClick={() => handleDeleteComment(comment.id)} 
+                                className="opacity-0 group-hover/msg:opacity-100 hover:text-red-400 text-[10px] ml-1 transition-opacity cursor-pointer"
+                                title="Delete Status Log"
+                              >
+                                ✕
+                              </button>
+                            </span>
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <div key={comment.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group/msg relative`}>
+                          <div className={`max-w-[80%] p-3 rounded-2xl text-xs relative ${
+                            isMe 
+                              ? 'bg-accent text-white rounded-tr-none' 
+                              : 'bg-white/10 text-white rounded-tl-none'
+                          }`}>
+                            <div className="flex justify-between items-center gap-4 text-[9px] text-white/40 mb-1">
+                              <span className="font-bold text-white/60">{comment.author}</span>
+                              <span>{new Date(comment.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            </div>
+                            
+                            {comment.tracks?.title && (
+                              <div className="text-[10px] text-white/50 font-semibold uppercase tracking-tight mb-1">
+                                🎵 {comment.tracks.title}
+                              </div>
+                            )}
+                            
+                            <p className="whitespace-pre-wrap">{comment.text}</p>
+                            
+                            {/* Delete Hover button */}
+                            <button
+                              onClick={() => handleDeleteComment(comment.id)}
+                              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover/msg:opacity-100 transition-opacity cursor-pointer shadow-lg hover:bg-red-600 text-[9px]"
+                              title="Delete Message"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                ) : (
+                  <p className="text-white/30 text-center text-xs py-12">No active playlist selected.</p>
+                )}
+                {activePlaylistId && comments.filter(c => c.playlist_id === activePlaylistId).length === 0 && (
+                  <div className="text-center text-white/30 text-xs py-12 px-4 space-y-2">
+                    <p className="uppercase tracking-widest font-semibold">No Conversation Yet</p>
+                    <p className="text-[10px] text-white/20 normal-case">Lia's comments and your replies will appear here in real-time.</p>
                   </div>
-                  <p className="text-white/80 font-medium whitespace-pre-wrap">{comment.text}</p>
-                  <div className="text-[10px] text-white/30 uppercase tracking-tighter pt-2 border-t border-white/5 flex flex-col gap-0.5">
-                    <div>Track: <span className="text-white/50">{comment.tracks?.title || 'Deleted Track'}</span></div>
-                    <div>Link: <span className="text-white/50">{comment.playlists?.title || 'Single Share'}</span></div>
-                  </div>
-                </div>
-              ))}
-              {comments.length === 0 && (
-                <p className="text-white/40 text-center text-xs py-8">No comments or feedback received yet.</p>
-              )}
+                )}
+              </div>
+
+              {/* Chat Input Area */}
+              <div className="p-3 border-t border-white/10 bg-black/20 flex gap-2">
+                <input
+                  type="text"
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSendReply();
+                    }
+                  }}
+                  placeholder="Type a message to Lia..."
+                  className="flex-grow bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-accent"
+                  disabled={!activePlaylistId || sendingReply}
+                />
+                <button
+                  onClick={handleSendReply}
+                  disabled={!replyText.trim() || !activePlaylistId || sendingReply}
+                  className="bg-white text-black font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-widest hover:bg-white/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Send
+                </button>
+              </div>
             </div>
           </div>
 
