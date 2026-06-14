@@ -197,11 +197,16 @@ export default function Home() {
           <div className="animate-marquee">
             {[0, 1, 2, 3].map((loop) => (
               <div key={loop} className="flex items-center gap-32 md:gap-64 px-16 md:px-32 shrink-0">
-                {[1, 2, 9].map((num) => (
-                  <div key={num} className="h-6 md:h-8 w-20 md:w-36 shrink-0 flex items-center justify-center">
+                {[
+                  { src: '/clients/clean_1.png', alt: 'Client 1' },
+                  { src: '/clients/clean_2.png', alt: 'Client 2' },
+                  { src: '/clients/clean_9.png', alt: 'Client 9' },
+                  { src: '/clients/clean_europa.png', alt: 'Europa Project' }
+                ].map((logo, idx) => (
+                  <div key={idx} className="h-6 md:h-8 w-20 md:w-36 shrink-0 flex items-center justify-center">
                     <img
-                      src={`/clients/clean_${num}.png`}
-                      alt={`Client ${num}`}
+                      src={logo.src}
+                      alt={logo.alt}
                       style={{ filter: 'invert(var(--logo-invert))' }}
                       className="max-h-full max-w-full object-contain opacity-75 hover:opacity-100 transition-opacity duration-500"
                     />
