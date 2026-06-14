@@ -71,7 +71,7 @@ export default async function SharePage({ params }: { params: Promise<{ slug: st
 
         {/* Footer (for Musicvine mode only) */}
         {playlist.permission_level === 'musicvine' && (
-          <div className="max-w-2xl mx-auto mt-20 pt-10 border-t border-white/10 space-y-10">
+          <div className="max-w-3xl mx-auto mt-20 pt-10 border-t border-white/10 space-y-10">
             
             {/* Music Vine Submission Declarations */}
             <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 space-y-4 backdrop-blur-sm">

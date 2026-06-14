@@ -346,7 +346,7 @@ export default function ShareCommentSystem({
   };
 
   return (
-    <div className="track-container max-w-2xl mx-auto bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 backdrop-blur-sm transition-all hover:bg-white/10 hover:border-white/20 relative overflow-hidden group">
+    <div className="track-container max-w-3xl mx-auto bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 backdrop-blur-sm transition-all hover:bg-white/10 hover:border-white/20 relative overflow-hidden group">
       
       {/* Decorative Glow */}
       {isPlaying && (

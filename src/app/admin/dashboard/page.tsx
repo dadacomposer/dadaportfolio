@@ -152,6 +152,26 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleResetLog = async () => {
+    if (!activePlaylistId) return;
+    const confirmReset = window.confirm('Are you sure you want to completely clear the chat log and review history for this playlist? This cannot be undone.');
+    if (!confirmReset) return;
+    
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('playlist_id', activePlaylistId);
+      
+      if (error) throw error;
+      showToast('Playlist log completely cleared!', 'success');
+      fetchComments();
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to clear log', 'error');
+    }
+  };
+
   const handleQuickShareView = async (track: any) => {
     try {
       const slug = Math.random().toString(36).substring(2, 10);
@@ -397,7 +417,18 @@ export default function AdminDashboard() {
 
             {/* Playlist Selector Dropdown */}
             <div className="mb-4">
-              <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">Select Shared Link / Playlist</label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-xs uppercase tracking-widest text-white/50">Select Shared Link / Playlist</label>
+                {activePlaylistId && (
+                  <button
+                    onClick={handleResetLog}
+                    className="text-red-400 hover:text-red-300 text-[10px] uppercase tracking-wider font-bold transition-colors cursor-pointer"
+                    title="Clear all comments, reviews, and notifications for this playlist"
+                  >
+                    Reset Log
+                  </button>
+                )}
+              </div>
               <select
                 value={activePlaylistId}
                 onChange={(e) => setActivePlaylistId(e.target.value)}
