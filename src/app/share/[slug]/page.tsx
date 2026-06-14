@@ -91,40 +91,13 @@ export default async function SharePage({ params }: { params: Promise<{ slug: st
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-accent mt-0.5 font-bold">✓</span>
-                  <span>Publishing rights: 100% owned & controlled by writer.</span>
+                  <span>I authorize Music Vine as my publisher.</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-accent mt-0.5 font-bold">✓</span>
                   <span>This track doesn't contain Lyrics.</span>
                 </li>
               </ul>
-            </div>
-
-            {/* Letter to Lia */}
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 relative overflow-hidden backdrop-blur-sm shadow-2xl text-left">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
-              
-              <div className="space-y-4 text-sm text-white/80 leading-relaxed font-sans">
-                <p className="font-semibold text-white">Hi Lia,</p>
-                <p>
-                  I built this interface to streamline our track submission workflow and keep everything organized. 
-                  As you can see, all the details are right here. If a track is approved, feel free to download the ZIP file directly—it is already formatted according to Music Vine's guidelines.
-                </p>
-                <p>
-                  You'll also find the tags and metadata that I would normally submit in the approved tracks form. 
-                  I've also added a handy button to copy all your review notes, so you can easily send them to me via email if that's more convenient for you. 
-                  Please note that I also see all your feedback in real-time as you type it.
-                </p>
-                <div className="pt-4 border-t border-white/5 flex items-center justify-between">
-                  <div>
-                    <p className="text-white/40 text-[10px] tracking-widest uppercase">Best,</p>
-                    <p className="font-bold text-white uppercase tracking-tight text-base mt-1 font-mono">Daniel</p>
-                  </div>
-                  <div className="text-[10px] uppercase tracking-widest bg-accent/20 text-accent px-3 py-1 rounded-full font-semibold border border-accent/20">
-                    Submission Portal
-                  </div>
-                </div>
-              </div>
             </div>
 
           </div>
