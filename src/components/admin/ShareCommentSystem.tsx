@@ -4,6 +4,16 @@ import { Play, Pause, Download, Copy, Send, CheckCircle, Music, Loader2, FileArc
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/context/ToastContext';
+// Global AudioContext singleton to avoid browser limit on active contexts
+let globalAudioContext: AudioContext | null = null;
+const getGlobalAudioContext = () => {
+  if (typeof window === 'undefined') return null;
+  if (!globalAudioContext) {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    globalAudioContext = new AudioContextClass();
+  }
+  return globalAudioContext;
+};
 
 export default function ShareCommentSystem({ 
   track, 
@@ -29,7 +39,127 @@ export default function ShareCommentSystem({
   const [reviewStatus, setReviewStatus] = useState<'approved' | 'rejected' | null>(null);
   const [isMetadataExpanded, setIsMetadataExpanded] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const waveformRef = useRef<HTMLDivElement>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
   const { showToast } = useToast();
+
+  // Set initial heights of waveform bars once on mount or track change
+  useEffect(() => {
+    if (waveformRef.current) {
+      const bars = waveformRef.current.children;
+      for (let i = 0; i < bars.length; i++) {
+        const bar = bars[i] as HTMLElement;
+        if (bar) {
+          const origHeight = bar.getAttribute('data-orig-height');
+          if (origHeight) {
+            bar.style.height = `${origHeight}%`;
+          }
+        }
+      }
+    }
+  }, [track.title]);
+
+  // Web Audio API Reactivity Effect
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const resetWaveform = () => {
+      if (!waveformRef.current) return;
+      const bars = waveformRef.current.children;
+      for (let i = 0; i < bars.length; i++) {
+        const bar = bars[i] as HTMLElement;
+        if (bar) {
+          const origHeight = bar.getAttribute('data-orig-height');
+          if (origHeight) {
+            bar.style.height = `${origHeight}%`;
+          }
+        }
+      }
+    };
+
+    const setupAudioReactive = () => {
+      if (analyserRef.current) return;
+
+      try {
+        const audioContext = getGlobalAudioContext();
+        if (!audioContext) return;
+
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 64; // small fftSize for simple loudness/bass reactivity
+        
+        // Retrieve or create the MediaElementAudioSourceNode on the audio element to prevent reconnect exceptions
+        let source = (audio as any)._audioSourceNode;
+        if (!source) {
+          source = audioContext.createMediaElementSource(audio);
+          (audio as any)._audioSourceNode = source;
+        }
+
+        source.connect(analyser);
+        analyser.connect(audioContext.destination);
+        analyserRef.current = analyser;
+      } catch (e) {
+        console.error("Failed to initialize Web Audio API:", e);
+      }
+    };
+
+    const updateLoudness = () => {
+      if (!analyserRef.current || !waveformRef.current) return;
+      const array = new Uint8Array(analyserRef.current.frequencyBinCount);
+      analyserRef.current.getByteFrequencyData(array);
+      
+      let sum = 0;
+      for (let i = 0; i < array.length; i++) {
+        sum += array[i];
+      }
+      const average = sum / array.length;
+
+      const bars = waveformRef.current.children;
+      for (let i = 0; i < bars.length; i++) {
+        const bar = bars[i] as HTMLElement;
+        if (bar) {
+          const origHeight = parseFloat(bar.getAttribute('data-orig-height') || '50');
+          // Map frequency spectrum to individual bars
+          const freqIndex = Math.min(array.length - 1, Math.floor((i / bars.length) * array.length));
+          const freqValue = array[freqIndex] || average;
+          const barScale = 0.85 + (freqValue / 255) * 1.35;
+          bar.style.height = `${Math.min(100, origHeight * barScale)}%`;
+        }
+      }
+
+      animationFrameRef.current = requestAnimationFrame(updateLoudness);
+    };
+
+    const handlePlay = () => {
+      setupAudioReactive();
+      const audioContext = getGlobalAudioContext();
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      updateLoudness();
+    };
+
+    const handlePause = () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      resetWaveform();
+    };
+
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('ended', handlePause);
+
+    return () => {
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('ended', handlePause);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [track.title]);
 
   // Deterministic waveform generator based on track title
   const generateWaveform = (title: string) => {
@@ -410,9 +540,9 @@ export default function ShareCommentSystem({
         </div>
 
         {/* Player Controls Panel */}
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full bg-black/20 p-3 md:p-4 rounded-2xl border border-white/5">
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full pt-2">
           {/* Spotify-style Controls Group */}
-          <div className="flex items-center justify-center gap-3 shrink-0 w-full sm:w-auto pb-1 sm:pb-0 border-b sm:border-b-0 border-white/5 sm:border-none">
+          <div className="flex items-center justify-center gap-3 shrink-0 w-full sm:w-auto pb-1.5 sm:pb-0">
             <button
               onClick={handleReplay}
               className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/15 text-white flex items-center justify-center transition-all hover:scale-105 border border-white/5 cursor-pointer"
@@ -439,6 +569,7 @@ export default function ShareCommentSystem({
           {/* Waveform Scrubber */}
           <div className="flex-grow w-full">
             <div 
+              ref={waveformRef}
               onClick={handleWaveformClick}
               className="h-11 flex items-end gap-[3px] cursor-pointer group/wave w-full py-1 relative select-none"
             >
@@ -448,9 +579,9 @@ export default function ShareCommentSystem({
                 return (
                   <div
                     key={i}
-                    className="flex-grow rounded-sm transition-all duration-150"
+                    data-orig-height={height}
+                    className="flex-grow rounded-sm transition-all duration-75"
                     style={{
-                      height: `${height}%`,
                       backgroundColor: isActive ? 'rgb(var(--accent-rgb, 59, 130, 246))' : 'rgba(255, 255, 255, 0.2)',
                     }}
                   />
@@ -480,6 +611,7 @@ export default function ShareCommentSystem({
         <audio 
           ref={audioRef} 
           src={track.audio_url} 
+          crossOrigin="anonymous"
           onEnded={() => setIsPlaying(false)}
           onPause={() => setIsPlaying(false)}
           onPlay={() => setIsPlaying(true)}
