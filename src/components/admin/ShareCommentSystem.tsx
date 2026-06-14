@@ -366,7 +366,7 @@ export default function ShareCommentSystem({
       }).catch(err => console.error('Slack notify error:', err));
 
       // Trigger server-side download
-      window.location.href = `/api/download-zip?trackId=${track.id}`;
+      window.location.href = `/api/download-zip?trackId=${track.id}&playlistId=${playlistId}`;
 
       setIsApproved(true);
       showToast('ZIP downloaded & approval notification sent!', 'success');
@@ -379,7 +379,7 @@ export default function ShareCommentSystem({
   };
 
   const copyZipLink = () => {
-    const directUrl = `${window.location.origin}/api/download-zip?trackId=${track.id}`;
+    const directUrl = `${window.location.origin}/api/download-zip?trackId=${track.id}&playlistId=${playlistId}`;
     navigator.clipboard.writeText(directUrl);
     showToast('Direct ZIP download link copied!', 'success');
   };

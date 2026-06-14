@@ -10,6 +10,7 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const trackId = searchParams.get('trackId');
+    const playlistId = searchParams.get('playlistId');
 
     if (!trackId) {
       return NextResponse.json({ error: 'Missing trackId' }, { status: 400 });
@@ -117,6 +118,7 @@ export async function GET(req: Request) {
     try {
       const approvalText = `★ APPROVED: Track approved and ZIP downloaded (main-version-${durationStr}.${originalExt}).`;
       await supabase.from('comments').insert([{
+        playlist_id: playlistId || null,
         track_id: track.id,
         author: 'System Notification',
         text: approvalText
