@@ -10,6 +10,22 @@ import UploadTrackModal from '@/components/admin/UploadTrackModal';
 import SharePlaylistBuilder from '@/components/admin/SharePlaylistBuilder';
 import EditTrackModal from '@/components/admin/EditTrackModal';
 
+const MusicvineIcon = ({ size = 16, className = "" }: { size?: number; className?: string }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M3 14c1.5-2 3.5-5 5.5-5s3.5 3 2.5 6.5C12 12 13.5 9 15.5 9s3.5 3 2.5 6.5c1-1.5 2-4 3.5-4s2 1.5 1.5 2.5" />
+  </svg>
+);
+
 export default function AdminDashboard() {
   const [tracks, setTracks] = useState<any[]>([]);
   const [selectedTracks, setSelectedTracks] = useState<string[]>([]);
@@ -136,7 +152,30 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleQuickShare = async (track: any) => {
+  const handleQuickShareView = async (track: any) => {
+    try {
+      const slug = Math.random().toString(36).substring(2, 10);
+      
+      const { error } = await supabase.from('playlists').insert([{
+        title: `${track.title} (Quick Share - View Only)`,
+        slug,
+        track_ids: [track.id],
+        permission_level: 'view'
+      }]);
+
+      if (error) throw error;
+
+      const shareUrl = `${window.location.origin}/share/${slug}`;
+      await navigator.clipboard.writeText(shareUrl);
+      showToast(`Quick View-Only share link generated & copied to clipboard!`, 'success');
+      fetchPlaylists(); // Refresh playlist dropdown
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to generate quick share link', 'error');
+    }
+  };
+
+  const handleQuickShareMusicvine = async (track: any) => {
     try {
       const slug = Math.random().toString(36).substring(2, 10);
       
@@ -308,11 +347,18 @@ export default function AdminDashboard() {
                           {track.is_hidden ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                         <button 
-                          onClick={() => handleQuickShare(track)} 
+                          onClick={() => handleQuickShareView(track)} 
                           className="text-white/40 hover:text-white transition-colors"
-                          title="Generate Quick Share Link"
+                          title="Generate Public View-Only Link"
                         >
                           <LinkIcon size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleQuickShareMusicvine(track)} 
+                          className="text-white/40 hover:text-[#ff5a60] transition-colors"
+                          title="Generate Musicvine Review Link"
+                        >
+                          <MusicvineIcon size={16} />
                         </button>
                         <button 
                           onClick={() => { setEditingTrack(track); setIsEditOpen(true); }} 

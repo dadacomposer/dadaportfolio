@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Download, Copy, Send, CheckCircle, Music, Loader2, FileArchive, Link as LinkIcon, RotateCcw, Square, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Play, Pause, Download, Copy, Send, CheckCircle, Music, Loader2, FileArchive, Link as LinkIcon, RotateCcw, Square, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/context/ToastContext';
@@ -27,6 +27,7 @@ export default function ShareCommentSystem({
   const [isApproved, setIsApproved] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
   const [reviewStatus, setReviewStatus] = useState<'approved' | 'rejected' | null>(null);
+  const [isMetadataExpanded, setIsMetadataExpanded] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { showToast } = useToast();
 
@@ -485,65 +486,80 @@ export default function ShareCommentSystem({
       {permissionLevel === 'musicvine' && (
         <div className="mt-8 pt-6 border-t border-white/10 space-y-6">
           
-          {/* Musicvine Metadata Grid */}
-          <div className="p-5 bg-white/5 border border-white/10 rounded-2xl space-y-4 backdrop-blur-sm">
-            <h4 className="text-xs uppercase tracking-widest text-accent font-bold">Music Vine Track Metadata</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-black/30 p-3 rounded-xl border border-white/5">
-                <span className="block text-[10px] uppercase tracking-wider text-white/40">1. Full Name</span>
-                <span className="text-sm font-semibold text-white">Daniel Angelucci</span>
+          {/* Musicvine Metadata Grid (Collapsible) */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm overflow-hidden transition-all duration-300">
+            <button
+              onClick={() => setIsMetadataExpanded(!isMetadataExpanded)}
+              className="w-full flex items-center justify-between p-5 text-left hover:bg-white/5 transition-colors focus:outline-none"
+            >
+              <h4 className="text-xs uppercase tracking-widest text-accent font-bold">Music Vine Track Metadata</h4>
+              <div className="flex items-center gap-2 text-[10px] text-white/40 uppercase tracking-widest font-mono font-bold">
+                <span>{isMetadataExpanded ? 'Hide Info' : 'Show Info'}</span>
+                {isMetadataExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </div>
-              <div className="bg-black/30 p-3 rounded-xl border border-white/5">
-                <span className="block text-[10px] uppercase tracking-wider text-white/40">2. Artist Profile</span>
-                <span className="text-sm font-semibold text-white">DADA</span>
-              </div>
-              <div className="bg-black/30 p-3 rounded-xl border border-white/5">
-                <span className="block text-[10px] uppercase tracking-wider text-white/40">3. Track Title</span>
-                <span className="text-sm font-semibold text-white uppercase tracking-tight">{track.title}</span>
-              </div>
-              <div className="bg-black/30 p-3 rounded-xl border border-white/5">
-                <span className="block text-[10px] uppercase tracking-wider text-white/40">4. Exclusivity</span>
-                <span className="text-sm font-semibold text-white">Exclusive</span>
-              </div>
-              <div className="bg-black/30 p-3 rounded-xl border border-white/5">
-                <span className="block text-[10px] uppercase tracking-wider text-white/40">5. Publishing Rights</span>
-                <span className="text-sm font-semibold text-white">Yes</span>
-              </div>
-              <div className="bg-black/30 p-3 rounded-xl border border-white/5">
-                <span className="block text-[10px] uppercase tracking-wider text-white/40">6. BPM</span>
-                <span className="text-sm font-bold text-accent font-mono">{track.bpm || 80}</span>
-              </div>
-              <div className="bg-black/30 p-3 rounded-xl border border-white/5">
-                <span className="block text-[10px] uppercase tracking-wider text-white/40">7. Number of Versions</span>
-                <span className="text-sm font-semibold text-white">1</span>
-              </div>
-              <div className="bg-black/30 p-3 rounded-xl border border-white/5 col-span-2 md:col-span-4">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="block text-[10px] uppercase tracking-wider text-white/40">8. Relevant Keywords</span>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(track.keywords || "Cinematic, Ambient, Production Music");
-                      showToast('Keywords copied to clipboard!', 'success');
-                    }}
-                    className="p-1 rounded bg-white/5 hover:bg-white/15 transition-all text-white/60 hover:text-white"
-                    title="Copy keywords as comma-separated text"
-                  >
-                    <Copy size={12} />
-                  </button>
+            </button>
+            
+            {isMetadataExpanded && (
+              <div className="px-5 pb-5 pt-1 border-t border-white/5 space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-black/30 p-3 rounded-xl border border-white/5">
+                    <span className="block text-[10px] uppercase tracking-wider text-white/40">1. Full Name</span>
+                    <span className="text-sm font-semibold text-white">Daniel Angelucci</span>
+                  </div>
+                  <div className="bg-black/30 p-3 rounded-xl border border-white/5">
+                    <span className="block text-[10px] uppercase tracking-wider text-white/40">2. Artist Profile</span>
+                    <span className="text-sm font-semibold text-white">DADA</span>
+                  </div>
+                  <div className="bg-black/30 p-3 rounded-xl border border-white/5">
+                    <span className="block text-[10px] uppercase tracking-wider text-white/40">3. Track Title</span>
+                    <span className="text-sm font-semibold text-white uppercase tracking-tight">{track.title}</span>
+                  </div>
+                  <div className="bg-black/30 p-3 rounded-xl border border-white/5">
+                    <span className="block text-[10px] uppercase tracking-wider text-white/40">4. Exclusivity</span>
+                    <span className="text-sm font-semibold text-white">Exclusive</span>
+                  </div>
+                  <div className="bg-black/30 p-3 rounded-xl border border-white/5">
+                    <span className="block text-[10px] uppercase tracking-wider text-white/40">5. Publishing Rights</span>
+                    <span className="text-sm font-semibold text-white">Yes</span>
+                  </div>
+                  <div className="bg-black/30 p-3 rounded-xl border border-white/5">
+                    <span className="block text-[10px] uppercase tracking-wider text-white/40">6. BPM</span>
+                    <span className="text-sm font-bold text-accent font-mono">{track.bpm || 80}</span>
+                  </div>
+                  <div className="bg-black/30 p-3 rounded-xl border border-white/5">
+                    <span className="block text-[10px] uppercase tracking-wider text-white/40">7. Number of Versions</span>
+                    <span className="text-sm font-semibold text-white">1</span>
+                  </div>
+                  <div className="bg-black/30 p-3 rounded-xl border border-white/5 col-span-2 md:col-span-4">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="block text-[10px] uppercase tracking-wider text-white/40">8. Relevant Keywords</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(track.keywords || "Cinematic, Ambient, Production Music");
+                          showToast('Keywords copied to clipboard!', 'success');
+                        }}
+                        className="p-1 rounded bg-white/5 hover:bg-white/15 transition-all text-white/60 hover:text-white"
+                        title="Copy keywords as comma-separated text"
+                      >
+                        <Copy size={12} />
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {(track.keywords || "Cinematic, Ambient, Production Music")
+                        .split(',')
+                        .map((kw: string) => kw.trim())
+                        .filter(Boolean)
+                        .map((kw: string, i: number) => (
+                          <span key={i} className="text-[10px] bg-white/10 hover:bg-white/15 text-white/80 px-2 py-0.5 rounded-full border border-white/5 transition-colors">
+                            {kw}
+                          </span>
+                        ))}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-1.5 mt-1">
-                  {(track.keywords || "Cinematic, Ambient, Production Music")
-                    .split(',')
-                    .map((kw: string) => kw.trim())
-                    .filter(Boolean)
-                    .map((kw: string, i: number) => (
-                      <span key={i} className="text-[10px] bg-white/10 hover:bg-white/15 text-white/80 px-2 py-0.5 rounded-full border border-white/5 transition-colors">
-                        {kw}
-                      </span>
-                    ))}
-                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="space-y-4">
