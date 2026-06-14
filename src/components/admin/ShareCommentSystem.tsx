@@ -353,133 +353,137 @@ export default function ShareCommentSystem({
         <div className="absolute -inset-10 bg-accent/10 rounded-full blur-3xl pointer-events-none transition-opacity duration-1000" />
       )}
 
-      <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-center relative z-10">
+      <div className="w-full space-y-4 md:space-y-6 relative z-10">
         
-        {/* Cover Art Player Display */}
-        <div className="relative w-24 h-24 md:w-28 md:h-28 shrink-0 rounded-2xl overflow-hidden border border-white/10 bg-white/5 shadow-2xl flex items-center justify-center group/cover">
-          <img 
-            src={track.artwork_url || `/artworks/${track.title}.jpg`} 
-            alt={track.title} 
-            className="w-full h-full object-cover group-hover/cover:scale-105 transition-transform duration-500 bg-white/5" 
-            onError={(e) => {
-              (e.target as HTMLElement).style.display = 'none';
-              const parent = (e.target as HTMLElement).parentElement;
-              if (parent) {
-                let fallback = parent.querySelector('.cover-fallback');
-                if (!fallback) {
-                  fallback = document.createElement('div');
-                  fallback.className = 'cover-fallback w-full h-full bg-gradient-to-tr from-accent/20 to-white/5 flex items-center justify-center';
-                  fallback.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-music text-white/30"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>`;
-                  parent.appendChild(fallback);
+        {/* Top Header Row (Cover + Info + Optional Download Link) */}
+        <div className="flex items-center gap-4 w-full">
+          {/* Cover Art Player Display */}
+          <div className="relative w-16 h-16 md:w-24 md:h-24 shrink-0 rounded-2xl overflow-hidden border border-white/10 bg-white/5 shadow-2xl flex items-center justify-center group/cover">
+            <img 
+              src={track.artwork_url || `/artworks/${track.title}.jpg`} 
+              alt={track.title} 
+              className="w-full h-full object-cover group-hover/cover:scale-105 transition-transform duration-500 bg-white/5" 
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+                const parent = (e.target as HTMLElement).parentElement;
+                if (parent) {
+                  let fallback = parent.querySelector('.cover-fallback');
+                  if (!fallback) {
+                    fallback = document.createElement('div');
+                    fallback.className = 'cover-fallback w-full h-full bg-gradient-to-tr from-accent/20 to-white/5 flex items-center justify-center';
+                    fallback.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-music text-white/30"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>`;
+                    parent.appendChild(fallback);
+                  }
                 }
-              }
-            }}
-          />
+              }}
+            />
 
-          {/* Hover Play overlay */}
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/cover:opacity-100 transition-opacity">
-            <button 
-              onClick={togglePlay}
-              className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform shadow-lg"
-            >
-              {isPlaying ? <Pause size={20} className="fill-black" /> : <Play size={20} className="ml-0.5 fill-black" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Player Details & Scrubber */}
-        <div className="flex-grow w-full space-y-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-white/40 text-[10px] tracking-widest uppercase mb-1">Track {(index + 1).toString().padStart(2, '0')}</p>
-              <h3 className="track-title text-xl md:text-2xl font-bold uppercase tracking-tighter text-white">{track.title}</h3>
-            </div>
-            
-            {/* Quick Play Trigger (if cover hover is too hidden) */}
-            <button 
-              onClick={togglePlay}
-              className="lg:hidden w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
-            >
-              {isPlaying ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
-            </button>
-          </div>
-
-          {/* Spotify-style Controls Group and Waveform */}
-          <div className="flex flex-col md:flex-row items-center gap-4 w-full bg-black/20 p-4 rounded-2xl border border-white/5">
-            {/* Spotify-style Controls Group */}
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={handleReplay}
-                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-white flex items-center justify-center transition-all hover:scale-105 border border-white/5"
-                title="Replay"
-              >
-                <RotateCcw size={14} />
-              </button>
-              <button
+            {/* Hover Play overlay */}
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/cover:opacity-100 transition-opacity">
+              <button 
                 onClick={togglePlay}
-                className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center transition-all hover:scale-105 shadow-md"
-                title={isPlaying ? "Pause" : "Play"}
+                className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform shadow-lg"
               >
-                {isPlaying ? <Pause size={16} className="fill-black" /> : <Play size={16} className="ml-0.5 fill-black" />}
+                {isPlaying ? <Pause size={18} className="fill-black" /> : <Play size={18} className="ml-0.5 fill-black" />}
               </button>
-              <button
-                onClick={handleStop}
-                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-white flex items-center justify-center transition-all hover:scale-105 border border-white/5"
-                title="Stop"
-              >
-                <Square size={14} className="fill-white" />
-              </button>
-            </div>
-
-            {/* Waveform Scrubber */}
-            <div className="flex-grow w-full">
-              <div 
-                onClick={handleWaveformClick}
-                className="h-10 flex items-end gap-[3px] cursor-pointer group/wave w-full py-1 relative select-none"
-              >
-                {waveformHeights.current.map((height, i) => {
-                  const progress = duration > 0 ? currentTime / duration : 0;
-                  const isActive = progress >= i / 50;
-                  return (
-                    <div
-                      key={i}
-                      className="flex-grow rounded-sm transition-all duration-150"
-                      style={{
-                        height: `${height}%`,
-                        backgroundColor: isActive ? 'rgb(var(--accent-rgb, 59, 130, 246))' : 'rgba(255, 255, 255, 0.2)',
-                      }}
-                    />
-                  );
-                })}
-              </div>
-              <div className="flex justify-between text-[9px] font-mono text-white/40 uppercase tracking-widest mt-1">
-                <span>{formatTime(currentTime)}</span>
-                <span>{formatTime(duration)}</span>
-              </div>
             </div>
           </div>
 
-          <audio 
-            ref={audioRef} 
-            src={track.audio_url} 
-            onEnded={() => setIsPlaying(false)}
-            onPause={() => setIsPlaying(false)}
-            onPlay={() => setIsPlaying(true)}
-          />
+          {/* Title and details */}
+          <div className="flex-grow min-w-0">
+            <p className="text-white/40 text-[9px] tracking-widest uppercase mb-0.5">Track {(index + 1).toString().padStart(2, '0')}</p>
+            <h3 className="track-title text-base md:text-xl font-bold uppercase tracking-tight md:tracking-tighter text-white truncate">{track.title}</h3>
+          </div>
+
+          {/* Regular Download Button (Desktop version) */}
+          {permissionLevel === 'download' && (
+            <a 
+              href={track.audio_url} 
+              download 
+              target="_blank" 
+              rel="noreferrer"
+              className="hidden sm:flex shrink-0 items-center gap-2 border border-white/20 rounded-full px-5 py-2.5 text-xs uppercase tracking-widest hover:bg-white hover:text-black transition-colors font-bold"
+            >
+              <Download size={14} /> Download
+            </a>
+          )}
         </div>
 
-        {/* Regular Download Button */}
+        {/* Player Controls Panel */}
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full bg-black/20 p-3 md:p-4 rounded-2xl border border-white/5">
+          {/* Spotify-style Controls Group */}
+          <div className="flex items-center justify-center gap-3 shrink-0 w-full sm:w-auto pb-1 sm:pb-0 border-b sm:border-b-0 border-white/5 sm:border-none">
+            <button
+              onClick={handleReplay}
+              className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/15 text-white flex items-center justify-center transition-all hover:scale-105 border border-white/5 cursor-pointer"
+              title="Replay"
+            >
+              <RotateCcw size={16} />
+            </button>
+            <button
+              onClick={togglePlay}
+              className="w-11 h-11 rounded-full bg-white text-black flex items-center justify-center transition-all hover:scale-105 shadow-md cursor-pointer"
+              title={isPlaying ? "Pause" : "Play"}
+            >
+              {isPlaying ? <Pause size={18} className="fill-black" /> : <Play size={18} className="ml-0.5 fill-black" />}
+            </button>
+            <button
+              onClick={handleStop}
+              className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/15 text-white flex items-center justify-center transition-all hover:scale-105 border border-white/5 cursor-pointer"
+              title="Stop"
+            >
+              <Square size={16} className="fill-white" />
+            </button>
+          </div>
+
+          {/* Waveform Scrubber */}
+          <div className="flex-grow w-full">
+            <div 
+              onClick={handleWaveformClick}
+              className="h-11 flex items-end gap-[3px] cursor-pointer group/wave w-full py-1 relative select-none"
+            >
+              {waveformHeights.current.map((height, i) => {
+                const progress = duration > 0 ? currentTime / duration : 0;
+                const isActive = progress >= i / 50;
+                return (
+                  <div
+                    key={i}
+                    className="flex-grow rounded-sm transition-all duration-150"
+                    style={{
+                      height: `${height}%`,
+                      backgroundColor: isActive ? 'rgb(var(--accent-rgb, 59, 130, 246))' : 'rgba(255, 255, 255, 0.2)',
+                    }}
+                  />
+                );
+              })}
+            </div>
+            <div className="flex justify-between text-[9px] font-mono text-white/40 uppercase tracking-widest mt-1">
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Regular Download Button (Mobile version) */}
         {permissionLevel === 'download' && (
           <a 
             href={track.audio_url} 
             download 
             target="_blank" 
             rel="noreferrer"
-            className="shrink-0 flex items-center gap-2 border border-white/20 rounded-full px-6 py-3 text-xs uppercase tracking-widest hover:bg-white hover:text-black transition-colors font-bold w-full lg:w-auto justify-center"
+            className="sm:hidden flex items-center gap-2 border border-white/20 rounded-full py-3 text-xs uppercase tracking-widest hover:bg-white hover:text-black transition-colors font-bold w-full justify-center"
           >
-            <Download size={16} /> Download
+            <Download size={14} /> Download
           </a>
         )}
+
+        <audio 
+          ref={audioRef} 
+          src={track.audio_url} 
+          onEnded={() => setIsPlaying(false)}
+          onPause={() => setIsPlaying(false)}
+          onPlay={() => setIsPlaying(true)}
+        />
       </div>
 
       {/* Musicvine Feedback Area */}
@@ -607,22 +611,22 @@ export default function ShareCommentSystem({
               />
             </div>
             
-            <div className="flex flex-wrap gap-4 items-center justify-between">
-              {/* Actions (Left: Copy All & Send Feedback) */}
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row gap-4 justify-between w-full">
+              {/* Actions (Left: Send Feedback & Copy All) */}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <button 
                   onClick={saveComment}
                   disabled={!comment.trim() || saving}
-                  className="bg-accent text-white font-bold px-6 py-3 rounded-full text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-accent/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                  className="flex-grow sm:flex-grow-0 bg-accent text-white font-bold px-5 py-3 rounded-full text-[10px] md:text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-accent/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg cursor-pointer"
                 >
-                  {saving ? <Loader2 className="animate-spin" size={14} /> : <Send size={14} />}
+                  {saving ? <Loader2 className="animate-spin" size={12} /> : <Send size={12} />}
                   {saved ? 'Feedback Sent ✓' : 'Send Feedback'}
                 </button>
 
                 {index === 0 && (
                   <button 
                     onClick={copyAllFeedback}
-                    className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors border border-white/10"
+                    className="flex items-center justify-center w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 transition-colors border border-white/10 shrink-0 cursor-pointer text-white"
                     title="Copy All Feedback to Clipboard"
                   >
                     <Copy size={16} className="text-white/80" />
@@ -631,11 +635,11 @@ export default function ShareCommentSystem({
               </div>
 
               {/* Right: Musicvine Zip Download & Copy Link */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <button
                   onClick={handleApproveAndDownload}
                   disabled={isZipping}
-                  className={`font-bold px-6 py-3 rounded-full text-xs uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg ${
+                  className={`flex-grow sm:flex-grow-0 font-bold px-5 py-3 rounded-full text-[10px] md:text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer ${
                     isApproved 
                       ? 'bg-green-500 hover:bg-green-600 text-white' 
                       : 'bg-white text-black hover:bg-white/80'
@@ -643,12 +647,12 @@ export default function ShareCommentSystem({
                 >
                   {isZipping ? (
                     <>
-                      <Loader2 className="animate-spin" size={14} />
+                      <Loader2 className="animate-spin" size={12} />
                       Downloading...
                     </>
                   ) : (
                     <>
-                      <FileArchive size={14} />
+                      <FileArchive size={12} />
                       {isApproved ? 'Downloaded ✓' : 'Download ZIP'}
                     </>
                   )}
@@ -656,7 +660,7 @@ export default function ShareCommentSystem({
 
                 <button
                   onClick={copyZipLink}
-                  className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors border border-white/10 text-white"
+                  className="flex items-center justify-center w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 transition-colors border border-white/10 text-white shrink-0 cursor-pointer"
                   title="Copy Direct ZIP Download Link"
                 >
                   <LinkIcon size={16} />

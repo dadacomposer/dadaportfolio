@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
-import { Upload, Link as LinkIcon, Trash2, MessageSquare, LogOut, Edit2, Eye, EyeOff } from 'lucide-react';
+import { Upload, Link as LinkIcon, Trash2, MessageSquare, LogOut, Edit2, Eye, EyeOff, MonitorOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
 
@@ -38,14 +38,21 @@ export default function AdminDashboard() {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingTrack, setEditingTrack] = useState<any>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const router = useRouter();
   const { showToast } = useToast();
 
-  // Load tracks, comments & playlists
+  // Load tracks, comments & playlists, and handle mobile check
   useEffect(() => {
     fetchTracks();
     fetchComments();
     fetchPlaylists();
+
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
 
     // Subscribe to Postgres changes on the comments table for real-time updates
     const subscription = supabase
@@ -59,6 +66,7 @@ export default function AdminDashboard() {
       .subscribe();
 
     return () => {
+      window.removeEventListener('resize', checkMobile);
       supabase.removeChannel(subscription);
     };
   }, []);
@@ -305,6 +313,26 @@ export default function AdminDashboard() {
       showToast('Failed to update visibility', 'error');
     }
   };
+
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-deepblack text-white flex flex-col items-center justify-center p-6 text-center font-sans selection:bg-accent selection:text-white">
+        <div className="max-w-md space-y-6">
+          <div className="w-20 h-20 mx-auto rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">
+            <MonitorOff size={36} />
+          </div>
+          <h1 className="text-2xl font-bold uppercase tracking-tighter">Desktop Only</h1>
+          <p className="text-white/60 text-sm leading-relaxed">
+            The Admin Dashboard contains advanced mixer tools, track analysis stats, and real-time activity logs designed exclusively for desktop monitors. 
+            Please access this page from your PC.
+          </p>
+          <div className="pt-4 border-t border-white/5 text-[10px] uppercase tracking-widest text-white/30 font-semibold">
+            Vault Security • DADA
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-deepblack text-white p-6 md:p-12 font-sans selection:bg-accent selection:text-white">

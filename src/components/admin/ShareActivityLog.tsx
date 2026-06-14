@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Calendar, ChevronRight, ChevronLeft, User, Music, Edit2 } from 'lucide-react';
+import { MessageSquare, Calendar, ChevronRight, ChevronLeft, User, Music, Edit2, X } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import { supabase } from '@/lib/supabase';
 
@@ -143,17 +143,26 @@ export default function ShareActivityLog({ playlistId, tracks }: ShareActivityLo
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 h-full w-[320px] md:w-[350px] bg-black/60 border-l border-white/10 backdrop-blur-xl z-[110] flex flex-col shadow-2xl overflow-hidden pt-24"
+            className="fixed top-0 right-0 h-full w-full sm:w-[350px] bg-black/60 border-l border-white/10 backdrop-blur-xl z-[110] flex flex-col shadow-2xl overflow-hidden pt-24"
           >
             {/* Header */}
-            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2">
                 <MessageSquare size={16} className="text-accent" />
-                <h3 className="text-sm uppercase tracking-widest font-bold text-white">Review Activity Log</h3>
+                <h3 className="text-sm uppercase tracking-widest font-bold text-white">Review Log</h3>
               </div>
-              <span className="text-[10px] bg-white/10 text-white/60 px-2 py-0.5 rounded-full font-semibold border border-white/5">
-                {comments.length} Notes
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] bg-white/10 text-white/60 px-2 py-0.5 rounded-full font-semibold border border-white/5 font-mono">
+                  {comments.length}
+                </span>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="sm:hidden text-white/40 hover:text-white p-1 rounded transition-colors cursor-pointer"
+                  title="Close Activity Log"
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
 
             {/* List Content */}
