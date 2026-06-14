@@ -33,7 +33,7 @@ export default async function SharePage({ params }: { params: Promise<{ slug: st
   const playlistTitle = playlist.title.replace(' (Single Share)', '');
 
   return (
-    <div className="min-h-screen bg-deepblack text-white p-6 md:p-12 font-sans selection:bg-accent selection:text-white relative overflow-x-hidden">
+    <div className="share-page-wrapper min-h-screen bg-deepblack text-white p-6 md:p-12 font-sans selection:bg-accent selection:text-white relative overflow-x-hidden">
       
       {/* Activity Log (Musicvine mode only) */}
       {playlist.permission_level === 'musicvine' && (
@@ -41,9 +41,7 @@ export default async function SharePage({ params }: { params: Promise<{ slug: st
       )}
 
       {/* Main Content Area */}
-      <div className={`max-w-4xl mx-auto pt-12 md:pt-24 lg:pt-0 lg:min-h-[calc(100vh-100px)] lg:flex lg:flex-col lg:justify-center transition-all duration-300 ${
-        playlist.permission_level === 'musicvine' ? 'lg:pr-[370px] lg:max-w-[100%]' : ''
-      }`}>
+      <div className="share-page-main max-w-4xl mx-auto pt-12 md:pt-24 lg:pt-0 lg:min-h-[calc(100vh-100px)] lg:flex lg:flex-col lg:justify-center transition-all duration-500">
         
         {/* Header */}
         <div className="mb-16 border-b border-white/10 pb-12">

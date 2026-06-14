@@ -35,6 +35,22 @@ export default function ShareActivityLog({ playlistId, tracks }: ShareActivityLo
     }
   }, []);
 
+  // Toggle body class to shift layout dynamically when sidebar is open
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      if (isOpen) {
+        document.body.classList.add('sidebar-open');
+      } else {
+        document.body.classList.remove('sidebar-open');
+      }
+    }
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.body.classList.remove('sidebar-open');
+      }
+    };
+  }, [isOpen]);
+
   const startEditing = (comment: Comment) => {
     setEditingId(comment.id);
     setEditText(comment.text);
