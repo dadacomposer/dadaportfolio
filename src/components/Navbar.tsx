@@ -9,6 +9,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const isAdmin = pathname.startsWith('/admin');
+  const isShare = pathname.startsWith('/share');
 
   const desktopLinks = [
     { name: 'Home', href: '/' },
@@ -29,6 +30,22 @@ export default function Navbar() {
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
+
+  if (isShare) {
+    return (
+      <motion.header 
+        className="fixed top-0 left-0 z-[100] py-3.5 px-6 glass m-4 w-[calc(100%-2rem)] max-w-4xl mx-auto right-0 rounded-full border border-white/5 flex justify-center"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.5 }}
+      >
+        <Link href="https://www.dadacomposer.com/" className="text-xl font-bold tracking-tighter text-white flex items-baseline">
+          DADA<span className="text-accent">.</span>
+          <span className="text-xl text-white/40 ml-0.5 tracking-tighter font-medium">COMPOSER</span>
+        </Link>
+      </motion.header>
+    );
+  }
 
   return (
     <>
