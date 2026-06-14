@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UploadCloud, CheckCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
+import { calculateBpmFromSamples, calculateZcrFromSamples, generateKeywordsFromMetadata } from '@/lib/audioAnalyzer';
 
 interface EditTrackModalProps {
   isOpen: boolean;
@@ -21,8 +22,42 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
   const [uploadingImage, setUploadingImage] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [newAudioFile, setNewAudioFile] = useState<File | null>(null);
+  const [analyzingAudio, setAnalyzingAudio] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const audioFileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
+
+  const handleAudioFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setNewAudioFile(file);
+    setAnalyzingAudio(true);
+    showToast('Analyzing replacement audio spectrum...', 'info');
+
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const arrayBuffer = await file.arrayBuffer();
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      const samples = audioBuffer.getChannelData(0);
+      const sampleRate = audioBuffer.sampleRate;
+
+      const analyzedBpm = calculateBpmFromSamples(samples, sampleRate);
+      const zcr = calculateZcrFromSamples(samples);
+      const analyzedKeywords = generateKeywordsFromMetadata(title || file.name, zcr, analyzedBpm);
+
+      setBpm(String(analyzedBpm));
+      setKeywords(analyzedKeywords);
+      showToast('Audio analyzed! BPM and keywords updated.', 'success');
+      audioCtx.close();
+    } catch (err) {
+      console.error('Browser audio analysis failed:', err);
+      showToast('Audio loaded but analysis failed. Enter metadata manually.', 'info');
+    } finally {
+      setAnalyzingAudio(false);
+    }
+  };
 
   useEffect(() => {
     if (track) {
@@ -32,6 +67,7 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
       setArtworkUrl(track.artwork_url || `/artworks/${track.title}.jpg`);
       setBpm(track.bpm ? String(track.bpm) : '');
       setKeywords(track.keywords || '');
+      setNewAudioFile(null); // Clear loaded file when switching tracks
     }
   }, [track, isOpen]);
 
@@ -74,6 +110,26 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
     showToast('Updating file binary and database metadata...', 'info');
 
     try {
+      let newAudioUrl = null;
+      let newCloudinaryId = null;
+
+      if (newAudioFile) {
+        showToast('Uploading replacement audio file to Cloudinary...', 'info');
+        const formData = new FormData();
+        formData.append('file', newAudioFile);
+        formData.append('title', `${title}-replacement-${Date.now()}`);
+
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!uploadRes.ok) throw new Error('Failed to upload replacement audio file');
+        const uploadData = await uploadRes.json();
+        newAudioUrl = uploadData.secure_url;
+        newCloudinaryId = uploadData.public_id;
+      }
+
       const res = await fetch('/api/edit-metadata', {
         method: 'POST',
         headers: {
@@ -87,6 +143,8 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
           artworkUrl,
           bpm: bpm ? parseInt(bpm) : null,
           keywords,
+          newAudioUrl,
+          newCloudinaryId,
         }),
       });
 
@@ -96,9 +154,10 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
       }
 
       setSuccess(true);
-      showToast('File tags updated and saved successfully!', 'success');
+      showToast('File tags and audio replaced successfully!', 'success');
       setTimeout(() => {
         setSuccess(false);
+        setNewAudioFile(null);
         onSuccess(); // Refresh track list
         onClose();
       }, 1500);
@@ -191,6 +250,50 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
                 </div>
 
                 <div>
+                  <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">Replacement Audio File (Optional)</label>
+                  <div
+                    onClick={() => !analyzingAudio && audioFileInputRef.current?.click()}
+                    className="border-2 border-dashed border-white/20 rounded-xl p-3 flex flex-col items-center justify-center cursor-pointer hover:border-white/50 hover:bg-white/5 transition-all text-xs"
+                  >
+                    {analyzingAudio ? (
+                      <>
+                        <Loader2 className="animate-spin text-white/50 mb-1" size={16} />
+                        <span className="text-white/70">Analyzing audio frequencies...</span>
+                      </>
+                    ) : (
+                      <>
+                        <UploadCloud size={16} className="text-white/50 mb-1" />
+                        <span className="text-white/70 truncate max-w-full">
+                          {newAudioFile ? newAudioFile.name : "Click to replace track audio (MP3/WAV)"}
+                        </span>
+                        {newAudioFile && (
+                          <span className="text-[9px] text-accent mt-1">Audio loaded & analyzed</span>
+                        )}
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      ref={audioFileInputRef}
+                      accept="audio/*"
+                      onChange={handleAudioFileChange}
+                      className="hidden"
+                    />
+                  </div>
+                  {newAudioFile && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setNewAudioFile(null);
+                      }}
+                      className="text-[10px] text-red-400 hover:text-red-300 mt-1 uppercase tracking-wider block"
+                    >
+                      Clear Audio Selection
+                    </button>
+                  )}
+                </div>
+
+                <div>
                   <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">Artwork Image</label>
                   <div className="flex gap-4 items-center mb-2">
                     {artworkUrl ? (
@@ -255,7 +358,7 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
 
                 <button
                   onClick={handleSave}
-                  disabled={!title || saving || uploadingImage}
+                  disabled={!title || saving || uploadingImage || analyzingAudio}
                   className="w-full bg-white text-black font-bold py-4 rounded-xl uppercase tracking-widest text-sm hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2 mt-4"
                 >
                   {saving ? <Loader2 className="animate-spin" size={18} /> : 'Write tags to file & database'}

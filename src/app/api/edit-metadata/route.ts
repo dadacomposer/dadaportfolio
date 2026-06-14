@@ -12,7 +12,7 @@ cloudinary.config({
 
 export async function POST(req: Request) {
   try {
-    const { trackId, title, artist, album, artworkUrl, bpm, keywords } = await req.json();
+    const { trackId, title, artist, album, artworkUrl, bpm, keywords, newAudioUrl, newCloudinaryId } = await req.json();
 
     if (!trackId || !title) {
       return NextResponse.json({ error: 'Missing trackId or title' }, { status: 400 });
@@ -29,8 +29,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Track not found' }, { status: 404 });
     }
 
-    // 2. Download audio file from Cloudinary/URL
-    const audioRes = await fetch(track.audio_url);
+    // 2. Download audio file from Cloudinary/URL (use replacement audio if provided)
+    const audioUrlToDownload = newAudioUrl || track.audio_url;
+    const audioRes = await fetch(audioUrlToDownload);
     if (!audioRes.ok) throw new Error('Failed to download audio file');
     const audioBuffer = Buffer.from(await audioRes.arrayBuffer());
 
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
     }
 
     // 4. Modify file buffer according to its format
-    const extension = track.audio_url.split('.').pop()?.split('?')[0]?.toLowerCase() || '';
+    const extension = audioUrlToDownload.split('.').pop()?.split('?')[0]?.toLowerCase() || '';
     let updatedBuffer = audioBuffer;
 
     if (extension === 'mp3') {
@@ -84,11 +85,12 @@ export async function POST(req: Request) {
       updatedBuffer = Buffer.from(wav.toBuffer());
     }
 
-    // 5. Upload the tagged file buffer back to Cloudinary, overwriting the original public_id
+    // 5. Upload the tagged file buffer back to Cloudinary, overwriting the target public_id
+    const targetCloudinaryId = newCloudinaryId || track.cloudinary_id;
     const uploadResult: any = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
-          public_id: track.cloudinary_id,
+          public_id: targetCloudinaryId,
           overwrite: true,
           invalidate: true, // Crucial to purge CDN cache
           resource_type: 'video' // Cloudinary requires 'video' for audio files
@@ -110,12 +112,22 @@ export async function POST(req: Request) {
         album: album || 'DADA Portfolio',
         artwork_url: artworkUrl || null,
         audio_url: uploadResult.secure_url,
+        cloudinary_id: targetCloudinaryId,
         bpm: bpm ? parseInt(bpm) : null,
         keywords: keywords || null
       })
       .eq('id', trackId);
 
     if (updateError) throw updateError;
+
+    // 7. If we uploaded a new file under a new ID, delete the old file from Cloudinary to clean up
+    if (newCloudinaryId && track.cloudinary_id && track.cloudinary_id !== newCloudinaryId) {
+      try {
+        await cloudinary.uploader.destroy(track.cloudinary_id, { resource_type: 'video' });
+      } catch (err) {
+        console.error('Failed to delete old Cloudinary asset:', err);
+      }
+    }
 
     return NextResponse.json({ success: true, audio_url: uploadResult.secure_url });
   } catch (error: any) {
