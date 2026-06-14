@@ -42,8 +42,11 @@ export default function SharePageClient({ playlist, tracks }: SharePageClientPro
         />
       )}
 
-      {/* Header Container (Fixed position, does not shift) */}
-      <div className="max-w-4xl pt-24 md:pt-32 pb-12 border-b border-white/10 mb-12 w-full text-left">
+      {/* Top Spacer to leave room for the fixed logo */}
+      <div className="h-16 md:h-24" />
+
+      {/* Header Container (Sticky position, does not shift) */}
+      <div className="sticky top-16 md:top-24 z-[90] bg-deepblack pt-2 pb-6 border-b border-white/10 mb-12 w-full text-left max-w-4xl">
         <h1 className="text-4xl md:text-6xl font-bold tracking-tighter uppercase leading-none mb-4">{playlistTitle}</h1>
         <p className="text-white/50 tracking-widest uppercase text-xs md:text-sm">
           Curated by DADA • {tracks.length} Tracks
