@@ -17,39 +17,17 @@ interface Comment {
 interface ShareActivityLogProps {
   playlistId: string;
   tracks: any[];
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
 }
 
-export default function ShareActivityLog({ playlistId, tracks }: ShareActivityLogProps) {
+export default function ShareActivityLog({ playlistId, tracks, isOpen, setIsOpen }: ShareActivityLogProps) {
   const [comments, setComments] = useState<Comment[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [savingId, setSavingId] = useState<string | null>(null);
   const { showToast } = useToast();
-
-  // Open sidebar by default on desktop viewports
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
-      setIsOpen(true);
-    }
-  }, []);
-
-  // Toggle body class to shift layout dynamically when sidebar is open
-  useEffect(() => {
-    if (typeof document !== 'undefined') {
-      if (isOpen) {
-        document.body.classList.add('sidebar-open');
-      } else {
-        document.body.classList.remove('sidebar-open');
-      }
-    }
-    return () => {
-      if (typeof document !== 'undefined') {
-        document.body.classList.remove('sidebar-open');
-      }
-    };
-  }, [isOpen]);
 
   const startEditing = (comment: Comment) => {
     setEditingId(comment.id);

@@ -94,22 +94,3 @@ html {
     @apply bg-anthracite/60 backdrop-blur-md border border-white/5 rounded-2xl;
   }
 }
-
-/* Sidebar responsive shifting transitions */
-.share-page-wrapper {
-  transition: padding-right 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-
-header {
-  transition: right 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), left 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-}
-
-@media (min-width: 1024px) {
-  body.sidebar-open .share-page-wrapper {
-    padding-right: 350px !important;
-  }
-
-  body.sidebar-open header {
-    right: 350px !important;
-  }
-}
