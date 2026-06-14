@@ -50,6 +50,32 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const currentIndexRef = useRef(-1);
   const previewStartRef = useRef<number>(0);
   const preloadedTrackRef = useRef<any>(null);
+  const fadeIntervalRef = useRef<any>(null);
+
+  const clearFade = () => {
+    if (fadeIntervalRef.current) {
+      clearInterval(fadeIntervalRef.current);
+      fadeIntervalRef.current = null;
+    }
+  };
+
+  const startFadeIn = (audio: HTMLAudioElement, durationMs: number = 600) => {
+    clearFade();
+    audio.volume = 0;
+    const steps = 20;
+    const stepTime = durationMs / steps;
+    let currentStep = 0;
+
+    fadeIntervalRef.current = setInterval(() => {
+      currentStep++;
+      const targetVol = currentStep / steps;
+      audio.volume = Math.min(1, targetVol);
+      if (currentStep >= steps) {
+        audio.volume = 1;
+        clearFade();
+      }
+    }, stepTime);
+  };
 
   useEffect(() => {
     async function loadTracks() {
@@ -134,35 +160,23 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const handleLoadedMetadata = () => {
       const isSharePage = typeof window !== 'undefined' && window.location.pathname.startsWith('/share/');
       
+      audio.volume = 0;
+      let startPoint = 0;
       if (!isSharePage) {
         // Calculate preview start point: either explicit preview_start, or 35% of duration
-        let startPoint = 0;
         if (previewStartRef.current > 0) {
           startPoint = previewStartRef.current;
         } else if (audio.duration) {
           startPoint = Math.floor(audio.duration * 0.35);
         }
-
-        if (startPoint > 0) {
-          audio.currentTime = startPoint;
-          
-          // Fade in volume after jump
-          audio.volume = 0;
-          let vol = 0;
-          const fadeIn = setInterval(() => {
-            if (vol < 1) {
-              vol += 0.1;
-              audio.volume = Math.min(1, vol);
-            } else {
-              clearInterval(fadeIn);
-            }
-          }, 50);
-        } else {
-          audio.volume = 1;
-        }
-      } else {
-        audio.volume = 1;
       }
+
+      if (startPoint > 0) {
+        audio.currentTime = startPoint;
+      }
+      
+      // Smooth fade-in
+      startFadeIn(audio, 800);
       setDuration(audio.duration);
     };
     
@@ -209,6 +223,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       togglePlay();
     } else {
       previewStartRef.current = previewStart || 0;
+      
+      // Clear current fade and mute volume immediately before loading
+      clearFade();
+      audioRef.current.volume = 0;
+
       // Only skip src reset if this exact URL is already in the preloaded buffer
       const alreadyPreloaded = preloadedTrackRef.current?.url === url;
       if (!alreadyPreloaded) {
@@ -222,6 +241,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
             audioRef.current.currentTime = startPoint;
           }
         }
+        // Fade in manually for preloaded track (since loadedmetadata won't fire again)
+        startFadeIn(audioRef.current, 800);
       }
       audioRef.current.play().catch(e => console.log('Playback error:', e));
 
@@ -250,10 +271,27 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       return;
     }
     if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
+      // Smoothly fade out before pausing to avoid pops
+      clearFade();
+      let vol = audioRef.current.volume;
+      const fadeOutInterval = setInterval(() => {
+        vol -= 0.15;
+        if (vol <= 0) {
+          clearInterval(fadeOutInterval);
+          if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.volume = 0;
+          }
+          setIsPlaying(false);
+        } else {
+          if (audioRef.current) audioRef.current.volume = Math.max(0, vol);
+        }
+      }, 20);
     } else {
-      audioRef.current.play();
+      audioRef.current.volume = 0;
+      audioRef.current.play().then(() => {
+        startFadeIn(audioRef.current!, 600);
+      }).catch(e => console.log('Playback error:', e));
       setIsPlaying(true);
       if (audioContextRef.current?.state === 'suspended') audioContextRef.current.resume();
     }
@@ -261,8 +299,21 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const pauseAudio = () => {
     if (audioRef.current && isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
+      clearFade();
+      let vol = audioRef.current.volume;
+      const fadeOutInterval = setInterval(() => {
+        vol -= 0.15;
+        if (vol <= 0) {
+          clearInterval(fadeOutInterval);
+          if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.volume = 0;
+          }
+          setIsPlaying(false);
+        } else {
+          if (audioRef.current) audioRef.current.volume = Math.max(0, vol);
+        }
+      }, 20);
     }
   };
 

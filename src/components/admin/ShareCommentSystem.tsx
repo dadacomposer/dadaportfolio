@@ -544,7 +544,21 @@ export default function ShareCommentSystem({
           crossOrigin="anonymous"
           onEnded={() => setIsPlaying(false)}
           onPause={() => setIsPlaying(false)}
-          onPlay={() => setIsPlaying(true)}
+          onPlay={(e) => {
+            setIsPlaying(true);
+            const audio = e.currentTarget;
+            audio.volume = 0;
+            let vol = 0;
+            const fade = setInterval(() => {
+              vol += 0.1;
+              if (vol >= 1) {
+                audio.volume = 1;
+                clearInterval(fade);
+              } else {
+                audio.volume = vol;
+              }
+            }, 30); // 300ms fade-in
+          }}
         />
       </div>
 
