@@ -22,14 +22,28 @@ export default function SharePageClient({ playlist, tracks }: SharePageClientPro
   const playlistTitle = playlist.title.replace(' (Single Share)', '');
 
   return (
-    <div className="min-h-screen bg-deepblack text-white p-6 md:p-12 font-sans selection:bg-accent selection:text-white relative overflow-x-hidden">
+    <div className="min-h-screen bg-deepblack text-white px-6 pb-6 md:px-12 md:pb-12 font-sans selection:bg-accent selection:text-white relative overflow-x-hidden">
       
-      {/* Fixed Top Left Logo */}
-      <div className="fixed top-8 left-6 md:top-12 md:left-12 z-[100] pointer-events-none">
-        <a href="https://www.dadacomposer.com/" className="text-xl font-bold tracking-tighter text-white flex items-baseline pointer-events-auto">
-          DADA<span className="text-accent">.</span>
-          <span className="text-xl text-white/40 ml-0.5 tracking-tighter font-medium">COMPOSER</span>
-        </a>
+      {/* Fixed Header Container (Logo + Title + Info) */}
+      <div className={`fixed top-0 left-0 right-0 z-[95] bg-deepblack px-6 pt-8 pb-6 md:px-12 md:pt-12 md:pb-8 border-b border-white/10 text-left transition-all duration-300 ${
+        playlist.permission_level === 'musicvine' && isSidebarOpen ? 'lg:pr-[370px]' : ''
+      }`}>
+        <div className="max-w-4xl">
+          {/* Logo */}
+          <div className="mb-6 md:mb-8">
+            <a href="https://www.dadacomposer.com/" className="text-xl font-bold tracking-tighter text-white flex items-baseline">
+              DADA<span className="text-accent">.</span>
+              <span className="text-xl text-white/40 ml-0.5 tracking-tighter font-medium">COMPOSER</span>
+            </a>
+          </div>
+          {/* Playlist Title & Metadata */}
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tighter uppercase leading-none mb-4">{playlistTitle}</h1>
+          <p className="text-white/50 tracking-widest uppercase text-xs md:text-sm">
+            Curated by DADA • {tracks.length} Tracks
+            {playlist.permission_level === 'musicvine' && ' • Feedback Mode'}
+            {playlist.permission_level === 'download' && ' • Download Available'}
+          </p>
+        </div>
       </div>
       
       {/* Activity Log (Musicvine mode only) */}
@@ -42,21 +56,8 @@ export default function SharePageClient({ playlist, tracks }: SharePageClientPro
         />
       )}
 
-      {/* Top Spacer to leave room for the fixed logo */}
-      <div className="h-16 md:h-24" />
-
-      {/* Header Container (Sticky position, does not shift) */}
-      <div className="sticky top-16 md:top-24 z-[90] bg-deepblack pt-2 pb-6 border-b border-white/10 mb-12 w-full text-left max-w-4xl">
-        <h1 className="text-4xl md:text-6xl font-bold tracking-tighter uppercase leading-none mb-4">{playlistTitle}</h1>
-        <p className="text-white/50 tracking-widest uppercase text-xs md:text-sm">
-          Curated by DADA • {tracks.length} Tracks
-          {playlist.permission_level === 'musicvine' && ' • Feedback Mode'}
-          {playlist.permission_level === 'download' && ' • Download Available'}
-        </p>
-      </div>
-
       {/* Main Content Area (Shifts dynamically) */}
-      <div className={`max-w-4xl mx-auto transition-all duration-300 ${
+      <div className={`max-w-4xl mx-auto transition-all duration-300 pt-[180px] md:pt-[240px] ${
         playlist.permission_level === 'musicvine' && isSidebarOpen ? 'lg:pr-[370px] lg:max-w-[100%]' : ''
       }`}>
 
