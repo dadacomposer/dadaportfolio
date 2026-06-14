@@ -2,9 +2,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
-import { Upload, Link as LinkIcon, Trash2, MessageSquare, LogOut, Edit2, Eye, EyeOff, MonitorOff } from 'lucide-react';
+import { Upload, Link as LinkIcon, Trash2, MessageSquare, LogOut, Edit2, Eye, EyeOff, MonitorOff, Play, Pause } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
+import { useAudio } from '@/context/AudioContext';
 
 import UploadTrackModal from '@/components/admin/UploadTrackModal';
 import SharePlaylistBuilder from '@/components/admin/SharePlaylistBuilder';
@@ -27,6 +28,7 @@ const MusicvineIcon = ({ size = 16, className = "" }: { size?: number; className
 );
 
 export default function AdminDashboard() {
+  const { currentTrackUrl, isPlaying, playTrack, togglePlay } = useAudio();
   const [tracks, setTracks] = useState<any[]>([]);
   const [selectedTracks, setSelectedTracks] = useState<string[]>([]);
   const [comments, setComments] = useState<any[]>([]);
@@ -399,6 +401,33 @@ export default function AdminDashboard() {
                       </td>
                       <td className="p-6">
                         <div className="flex items-center gap-4">
+                          <button
+                            onClick={() => {
+                              const isCurrent = currentTrackUrl === track.audio_url;
+                              if (isCurrent) {
+                                togglePlay();
+                              } else {
+                                playTrack(
+                                  track.audio_url,
+                                  track.title,
+                                  track.artwork_url || `/artworks/${track.title}.jpg`,
+                                  track.preview_start || 0
+                                );
+                              }
+                            }}
+                            className={`w-8 h-8 flex items-center justify-center shrink-0 rounded-lg border transition-all cursor-pointer ${
+                              isPlaying && currentTrackUrl === track.audio_url
+                                ? 'bg-accent/10 border-accent/40 text-accent'
+                                : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:border-white/20 hover:bg-white/10'
+                            }`}
+                            title={isPlaying && currentTrackUrl === track.audio_url ? "Pause" : "Play"}
+                          >
+                            {isPlaying && currentTrackUrl === track.audio_url ? (
+                              <Pause size={12} fill="currentColor" />
+                            ) : (
+                              <Play size={12} fill="currentColor" className="ml-0.5" />
+                            )}
+                          </button>
                           <img 
                             src={track.artwork_url || `/artworks/${track.title}.jpg`} 
                             alt="" 
