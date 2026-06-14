@@ -59,10 +59,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const startFadeIn = (audio: HTMLAudioElement, durationMs: number = 600) => {
+  const startFadeIn = (audio: HTMLAudioElement, durationMs: number = 150) => {
     clearFade();
     audio.volume = 0;
-    const steps = 20;
+    const steps = durationMs <= 200 ? 10 : 20;
     const stepTime = durationMs / steps;
     let currentStep = 0;
 
@@ -176,7 +176,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       }
       
       // Smooth fade-in
-      startFadeIn(audio, 800);
+      startFadeIn(audio, 150);
       setDuration(audio.duration);
     };
     
@@ -232,6 +232,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       const alreadyPreloaded = preloadedTrackRef.current?.url === url;
       if (!alreadyPreloaded) {
         audioRef.current.src = url;
+        audioRef.current.load(); // Force reset media pipeline and start buffering immediately
       } else {
         // Since it is already preloaded, we must ensure it's seeked to the preview point
         const isSharePage = typeof window !== 'undefined' && window.location.pathname.startsWith('/share/');
@@ -242,7 +243,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           }
         }
         // Fade in manually for preloaded track (since loadedmetadata won't fire again)
-        startFadeIn(audioRef.current, 800);
+        startFadeIn(audioRef.current, 150);
       }
       audioRef.current.play().catch(e => console.log('Playback error:', e));
 
@@ -290,7 +291,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     } else {
       audioRef.current.volume = 0;
       audioRef.current.play().then(() => {
-        startFadeIn(audioRef.current!, 600);
+        startFadeIn(audioRef.current!, 150);
       }).catch(e => console.log('Playback error:', e));
       setIsPlaying(true);
       if (audioContextRef.current?.state === 'suspended') audioContextRef.current.resume();

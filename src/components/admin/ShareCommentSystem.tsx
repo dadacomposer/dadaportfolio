@@ -544,6 +544,7 @@ export default function ShareCommentSystem({
         <audio 
           ref={audioRef} 
           src={track.audio_url} 
+          preload="auto"
           crossOrigin="anonymous"
           onEnded={() => setIsPlaying(false)}
           onPause={() => setIsPlaying(false)}
@@ -553,14 +554,14 @@ export default function ShareCommentSystem({
             audio.volume = 0;
             let vol = 0;
             const fade = setInterval(() => {
-              vol += 0.1;
+              vol += 0.2;
               if (vol >= 1) {
                 audio.volume = 1;
                 clearInterval(fade);
               } else {
                 audio.volume = vol;
               }
-            }, 30); // 300ms fade-in
+            }, 20); // 100ms fade-in
           }}
         />
       </div>
