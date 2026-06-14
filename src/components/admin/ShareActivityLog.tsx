@@ -21,12 +21,19 @@ interface ShareActivityLogProps {
 
 export default function ShareActivityLog({ playlistId, tracks }: ShareActivityLogProps) {
   const [comments, setComments] = useState<Comment[]>([]);
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [savingId, setSavingId] = useState<string | null>(null);
   const { showToast } = useToast();
+
+  // Open sidebar by default on desktop viewports
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+      setIsOpen(true);
+    }
+  }, []);
 
   const startEditing = (comment: Comment) => {
     setEditingId(comment.id);
