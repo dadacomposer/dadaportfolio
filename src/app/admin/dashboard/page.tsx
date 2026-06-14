@@ -377,8 +377,8 @@ export default function AdminDashboard() {
           
           {/* Tracks List (Left Column) */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-sm">
-              <table className="w-full text-left border-collapse">
+            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-x-auto backdrop-blur-sm">
+              <table className="w-full text-left border-collapse min-w-[800px]">
                 <thead>
                   <tr className="border-b border-white/10 text-xs uppercase tracking-widest text-white/40">
                     <th className="p-6 font-normal w-12"></th>
@@ -471,42 +471,44 @@ export default function AdminDashboard() {
                       <td className="p-6 text-white/40 text-sm">
                         {new Date(track.created_at).toLocaleDateString()}
                       </td>
-                      <td className="p-6 text-right opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-3">
-                        <button 
-                          onClick={() => toggleVisibility(track.id, track.is_hidden)} 
-                          className={`transition-colors ${track.is_hidden ? 'text-red-400 hover:text-red-300' : 'text-white/40 hover:text-white'}`}
-                          title={track.is_hidden ? "Show in public library" : "Hide from public library"}
-                        >
-                          {track.is_hidden ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                        <button 
-                          onClick={() => handleQuickShareView(track)} 
-                          className="text-white/40 hover:text-white transition-colors"
-                          title="Generate Public View-Only Link"
-                        >
-                          <LinkIcon size={16} />
-                        </button>
-                        <button 
-                          onClick={() => handleQuickShareMusicvine(track)} 
-                          className="text-white/40 hover:text-[#ff5a60] transition-colors"
-                          title="Generate Musicvine Review Link"
-                        >
-                          <MusicvineIcon size={16} />
-                        </button>
-                        <button 
-                          onClick={() => { setEditingTrack(track); setIsEditOpen(true); }} 
-                          className="text-white/40 hover:text-white transition-colors"
-                          title="Edit Metadata"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(track.id, track.cloudinary_id)} 
-                          className="text-red-400 hover:text-red-300 transition-colors"
-                          title="Delete Track"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                      <td className="p-6 text-right">
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end gap-3">
+                          <button 
+                            onClick={() => toggleVisibility(track.id, track.is_hidden)} 
+                            className={`transition-colors ${track.is_hidden ? 'text-red-400 hover:text-red-300' : 'text-white/40 hover:text-white'}`}
+                            title={track.is_hidden ? "Show in public library" : "Hide from public library"}
+                          >
+                            {track.is_hidden ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                          <button 
+                            onClick={() => handleQuickShareView(track)} 
+                            className="text-white/40 hover:text-white transition-colors"
+                            title="Generate Public View-Only Link"
+                          >
+                            <LinkIcon size={16} />
+                          </button>
+                          <button 
+                            onClick={() => handleQuickShareMusicvine(track)} 
+                            className="text-white/40 hover:text-[#ff5a60] transition-colors"
+                            title="Generate Musicvine Review Link"
+                          >
+                            <MusicvineIcon size={16} />
+                          </button>
+                          <button 
+                            onClick={() => { setEditingTrack(track); setIsEditOpen(true); }} 
+                            className="text-white/40 hover:text-white transition-colors"
+                            title="Edit Metadata"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(track.id, track.cloudinary_id)} 
+                            className="text-red-400 hover:text-red-300 transition-colors"
+                            title="Delete Track"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
