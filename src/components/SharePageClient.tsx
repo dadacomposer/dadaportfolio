@@ -24,8 +24,8 @@ export default function SharePageClient({ playlist, tracks }: SharePageClientPro
   return (
     <div className="min-h-screen bg-deepblack text-white p-6 md:p-12 font-sans selection:bg-accent selection:text-white relative overflow-x-hidden">
       
-      {/* Fixed Top Right Logo */}
-      <div className="fixed top-8 right-8 z-[100] pointer-events-none">
+      {/* Fixed Top Left Logo */}
+      <div className="fixed top-8 left-8 z-[100] pointer-events-none">
         <a href="https://www.dadacomposer.com/" className="text-xl font-bold tracking-tighter text-white flex items-baseline pointer-events-auto">
           DADA<span className="text-accent">.</span>
           <span className="text-xl text-white/40 ml-0.5 tracking-tighter font-medium">COMPOSER</span>
@@ -42,20 +42,20 @@ export default function SharePageClient({ playlist, tracks }: SharePageClientPro
         />
       )}
 
-      {/* Main Content Area */}
-      <div className={`max-w-4xl mx-auto pt-12 md:pt-24 lg:pt-0 lg:min-h-[calc(100vh-100px)] lg:flex lg:flex-col lg:justify-center transition-all duration-300 ${
+      {/* Header Container (Fixed position, does not shift) */}
+      <div className="max-w-4xl mx-auto pt-24 md:pt-32 pb-12 border-b border-white/10 mb-12 w-full text-left">
+        <h1 className="text-4xl md:text-6xl font-bold tracking-tighter uppercase leading-none mb-4">{playlistTitle}</h1>
+        <p className="text-white/50 tracking-widest uppercase text-xs md:text-sm">
+          Curated by DADA • {tracks.length} Tracks
+          {playlist.permission_level === 'musicvine' && ' • Feedback Mode'}
+          {playlist.permission_level === 'download' && ' • Download Available'}
+        </p>
+      </div>
+
+      {/* Main Content Area (Shifts dynamically) */}
+      <div className={`max-w-4xl mx-auto transition-all duration-300 ${
         playlist.permission_level === 'musicvine' && isSidebarOpen ? 'lg:pr-[370px] lg:max-w-[100%]' : ''
       }`}>
-        
-        {/* Header */}
-        <div className="mb-16 border-b border-white/10 pb-12">
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tighter uppercase leading-none mb-4">{playlistTitle}</h1>
-          <p className="text-white/50 tracking-widest uppercase text-xs md:text-sm">
-            Curated by DADA • {tracks.length} Tracks
-            {playlist.permission_level === 'musicvine' && ' • Feedback Mode'}
-            {playlist.permission_level === 'download' && ' • Download Available'}
-          </p>
-        </div>
 
         {/* Tracks List */}
         <div className="space-y-4">
