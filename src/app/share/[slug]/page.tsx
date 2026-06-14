@@ -41,7 +41,7 @@ export default async function SharePage({ params }: { params: Promise<{ slug: st
       )}
 
       {/* Main Content Area */}
-      <div className={`max-w-4xl mx-auto pt-12 md:pt-24 transition-all duration-300 ${
+      <div className={`max-w-4xl mx-auto pt-12 md:pt-24 lg:pt-0 lg:min-h-[calc(100vh-100px)] lg:flex lg:flex-col lg:justify-center transition-all duration-300 ${
         playlist.permission_level === 'musicvine' ? 'lg:pr-[370px] lg:max-w-[100%]' : ''
       }`}>
         
