@@ -338,7 +338,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-deepblack text-white p-6 md:p-12 font-sans selection:bg-accent selection:text-white">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[1440px] w-full mx-auto">
         
         {/* Header */}
         <div className="flex justify-between items-end border-b border-white/10 pb-8 mb-12">
@@ -378,14 +378,14 @@ export default function AdminDashboard() {
           {/* Tracks List (Left Column) */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white/5 border border-white/10 rounded-3xl overflow-x-auto backdrop-blur-sm">
-              <table className="w-full text-left border-collapse min-w-[800px]">
+              <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-white/10 text-xs uppercase tracking-widest text-white/40">
                     <th className="p-6 font-normal w-12"></th>
-                    <th className="p-6 font-normal">Title</th>
-                    <th className="p-6 font-normal">Cloudinary ID</th>
-                    <th className="p-6 font-normal">Added</th>
-                    <th className="p-6 font-normal text-right">Actions</th>
+                    <th className="p-6 font-normal min-w-[200px]">Title</th>
+                    <th className="p-6 font-normal max-w-[180px] min-w-[120px]">Cloudinary ID</th>
+                    <th className="p-6 font-normal min-w-[100px]">Added</th>
+                    <th className="p-6 font-normal text-right w-48 min-w-[192px]">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -399,7 +399,7 @@ export default function AdminDashboard() {
                           className="w-4 h-4 accent-white bg-transparent border-white/20 cursor-pointer"
                         />
                       </td>
-                      <td className="p-6">
+                      <td className="p-6 min-w-[200px]">
                         <div className="flex items-center gap-4">
                           <button
                             onClick={() => {
@@ -467,11 +467,11 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       </td>
-                      <td className="p-6 text-white/40 text-sm font-mono">{track.cloudinary_id}</td>
-                      <td className="p-6 text-white/40 text-sm">
+                      <td className="p-6 text-white/40 text-sm font-mono max-w-[180px] min-w-[120px] truncate" title={track.cloudinary_id}>{track.cloudinary_id}</td>
+                      <td className="p-6 text-white/40 text-sm min-w-[100px]">
                         {new Date(track.created_at).toLocaleDateString()}
                       </td>
-                      <td className="p-6 text-right">
+                      <td className="p-6 text-right w-48 min-w-[192px]">
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end gap-3">
                           <button 
                             onClick={() => toggleVisibility(track.id, track.is_hidden)} 
