@@ -38,7 +38,10 @@ export default function UploadTrackModal({ isOpen, onClose, onSuccess }: { isOpe
         }),
       });
 
-      if (!sigRes.ok) throw new Error('Failed to generate upload signature');
+      if (!sigRes.ok) {
+        const errorData = await sigRes.json();
+        throw new Error(errorData.error || 'Failed to generate upload signature');
+      }
       const { signature, timestamp, apiKey, cloudName } = await sigRes.json();
 
       // Construct direct upload payload

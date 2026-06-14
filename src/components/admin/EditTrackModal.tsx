@@ -94,7 +94,10 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
         }),
       });
 
-      if (!sigRes.ok) throw new Error('Failed to generate artwork signature');
+      if (!sigRes.ok) {
+        const errorData = await sigRes.json();
+        throw new Error(errorData.error || 'Failed to generate artwork signature');
+      }
       const { signature, timestamp, apiKey, cloudName } = await sigRes.json();
 
       // Construct direct upload payload
@@ -157,7 +160,10 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
           }),
         });
 
-        if (!sigRes.ok) throw new Error('Failed to generate audio signature');
+        if (!sigRes.ok) {
+          const errorData = await sigRes.json();
+          throw new Error(errorData.error || 'Failed to generate audio signature');
+        }
         const { signature, timestamp, apiKey, cloudName } = await sigRes.json();
 
         // Construct direct upload payload
