@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Calendar, ChevronRight, ChevronLeft, User, Music } from 'lucide-react';
+import { MessageSquare, Calendar, ChevronRight, ChevronLeft, User, Music, Edit2 } from 'lucide-react';
+import { useToast } from '@/context/ToastContext';
 import { supabase } from '@/lib/supabase';
 
 interface Comment {
@@ -22,6 +23,43 @@ export default function ShareActivityLog({ playlistId, tracks }: ShareActivityLo
   const [comments, setComments] = useState<Comment[]>([]);
   const [isOpen, setIsOpen] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState('');
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const { showToast } = useToast();
+
+  const startEditing = (comment: Comment) => {
+    setEditingId(comment.id);
+    setEditText(comment.text);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditText('');
+  };
+
+  const saveEdit = async (commentId: string) => {
+    if (!editText.trim()) return;
+    setSavingId(commentId);
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .update({ text: editText })
+        .eq('id', commentId);
+
+      if (error) throw error;
+      
+      showToast('Comment updated successfully!', 'success');
+      setEditingId(null);
+      setEditText('');
+      fetchComments();
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update comment', 'error');
+    } finally {
+      setSavingId(null);
+    }
+  };
 
   // Map track IDs to names for easy lookup
   const trackMap = new Map<string, string>();
@@ -47,20 +85,19 @@ export default function ShareActivityLog({ playlistId, tracks }: ShareActivityLo
   useEffect(() => {
     fetchComments();
 
-    // Subscribe to realtime comments insert
+    // Subscribe to realtime comments postgres_changes (INSERT, UPDATE, DELETE)
     const channel = supabase
       .channel(`playlist-comments-log-${playlistId}`)
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'comments',
           filter: `playlist_id=eq.${playlistId}`
         },
-        (payload) => {
-          const newComment = payload.new as Comment;
-          setComments(prev => [newComment, ...prev]);
+        () => {
+          fetchComments();
         }
       )
       .subscribe();
@@ -133,7 +170,10 @@ export default function ShareActivityLog({ playlistId, tracks }: ShareActivityLo
               ) : (
                 comments.map((comment) => {
                   const isApproval = comment.text.startsWith('★ APPROVED:');
+                  const isRejection = comment.text.startsWith('✗ REJECTED:');
                   const trackName = comment.track_id ? trackMap.get(comment.track_id) : null;
+                  const isEditable = comment.author === 'Musicvine Reviewer' && !isApproval && !isRejection;
+                  const isEditing = editingId === comment.id;
                   
                   return (
                     <motion.div
@@ -143,7 +183,9 @@ export default function ShareActivityLog({ playlistId, tracks }: ShareActivityLo
                       className={`p-4 rounded-2xl border transition-all ${
                         isApproval 
                           ? 'bg-green-500/5 border-green-500/20 hover:bg-green-500/10' 
-                          : 'bg-white/5 border-white/5 hover:bg-white/10'
+                          : isRejection
+                            ? 'bg-red-500/5 border-red-500/20 hover:bg-red-500/10'
+                            : 'bg-white/5 border-white/5 hover:bg-white/10'
                       }`}
                     >
                       {/* Meta: Author & Time */}
@@ -152,9 +194,20 @@ export default function ShareActivityLog({ playlistId, tracks }: ShareActivityLo
                           <User size={10} className="text-accent" />
                           <span className="font-semibold text-white/60">{comment.author}</span>
                         </div>
-                        <div className="flex items-center gap-1 font-mono">
-                          <Calendar size={10} />
-                          <span>{formatCommentTime(comment.created_at)}</span>
+                        <div className="flex items-center gap-2 font-mono">
+                          {isEditable && !isEditing && (
+                            <button
+                              onClick={() => startEditing(comment)}
+                              className="text-white/40 hover:text-white transition-colors cursor-pointer flex items-center gap-0.5 normal-case font-bold"
+                              title="Edit Feedback"
+                            >
+                              <Edit2 size={10} /> Edit
+                            </button>
+                          )}
+                          <div className="flex items-center gap-1">
+                            <Calendar size={10} />
+                            <span>{formatCommentTime(comment.created_at)}</span>
+                          </div>
                         </div>
                       </div>
 
@@ -166,12 +219,39 @@ export default function ShareActivityLog({ playlistId, tracks }: ShareActivityLo
                         </div>
                       )}
 
-                      {/* Comment Body */}
-                      <p className={`text-xs leading-relaxed whitespace-pre-wrap ${
-                        isApproval ? 'text-green-400 font-medium' : 'text-white/80'
-                      }`}>
-                        {comment.text}
-                      </p>
+                      {/* Comment Body / Edit Area */}
+                      {isEditing ? (
+                        <div className="space-y-2 mt-1">
+                          <textarea
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-accent resize-y min-h-[60px]"
+                            placeholder="Edit your comment..."
+                          />
+                          <div className="flex gap-2 justify-end">
+                            <button
+                              onClick={cancelEditing}
+                              className="px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-[10px] uppercase font-bold text-white transition-all cursor-pointer"
+                              disabled={savingId === comment.id}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => saveEdit(comment.id)}
+                              className="px-2.5 py-1 rounded bg-accent hover:bg-accent/80 text-[10px] uppercase font-bold text-white transition-all flex items-center gap-1 cursor-pointer"
+                              disabled={savingId === comment.id || !editText.trim()}
+                            >
+                              {savingId === comment.id ? 'Saving...' : 'Save'}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className={`text-xs leading-relaxed whitespace-pre-wrap ${
+                          isApproval ? 'text-green-400 font-medium' : isRejection ? 'text-red-400 font-medium' : 'text-white/80'
+                        }`}>
+                          {comment.text}
+                        </p>
+                      )}
                     </motion.div>
                   );
                 })
