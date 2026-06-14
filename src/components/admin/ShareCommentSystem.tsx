@@ -405,7 +405,11 @@ export default function ShareCommentSystem({
   };
 
   return (
-    <div className="track-container max-w-3xl mx-auto bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 backdrop-blur-sm transition-all hover:bg-white/10 hover:border-white/20 relative overflow-hidden group">
+    <div className={`track-container max-w-3xl mx-auto border rounded-3xl p-6 md:p-8 backdrop-blur-sm transition-all duration-500 relative overflow-hidden group ${
+      isPlaying 
+        ? 'bg-gradient-to-br from-accent/15 via-white/5 to-white/5 border-accent/30 shadow-[0_0_50px_-12px_rgba(59,130,246,0.25)]' 
+        : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
+    }`}>
       
       {/* Decorative Glow */}
       {isPlaying && (
