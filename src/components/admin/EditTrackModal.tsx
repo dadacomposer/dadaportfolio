@@ -79,23 +79,50 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
     showToast('Uploading artwork to Cloudinary...', 'info');
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('title', `${title || 'track'}-artwork-${Date.now()}`);
+      const publicId = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}-artwork-${Date.now()}`;
+      const folder = 'dada-composer/artwork';
 
-      const res = await fetch('/api/upload', {
+      // Get secure signature from server
+      const sigRes = await fetch('/api/cloudinary-signature', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          params: {
+            public_id: publicId,
+            folder,
+          }
+        }),
       });
 
-      if (!res.ok) throw new Error('Cloudinary artwork upload failed');
-      const cloudinaryData = await res.json();
+      if (!sigRes.ok) throw new Error('Failed to generate artwork signature');
+      const { signature, timestamp, apiKey, cloudName } = await sigRes.json();
+
+      // Construct direct upload payload
+      const cloudinaryForm = new FormData();
+      cloudinaryForm.append('file', file);
+      cloudinaryForm.append('api_key', apiKey);
+      cloudinaryForm.append('timestamp', timestamp.toString());
+      cloudinaryForm.append('signature', signature);
+      cloudinaryForm.append('public_id', publicId);
+      cloudinaryForm.append('folder', folder);
+
+      // Upload directly to Cloudinary (resource_type: image)
+      const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: cloudinaryForm,
+      });
+
+      if (!uploadRes.ok) {
+        const errorText = await uploadRes.text();
+        throw new Error(`Direct Cloudinary artwork upload failed: ${errorText}`);
+      }
+      const cloudinaryData = await uploadRes.json();
 
       setArtworkUrl(cloudinaryData.secure_url);
       showToast('Artwork uploaded successfully!', 'success');
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      showToast('Artwork upload failed', 'error');
+      showToast(err.message || 'Artwork upload failed', 'error');
     } finally {
       setUploadingImage(false);
     }
@@ -107,24 +134,51 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
       return;
     }
     setSaving(true);
-    showToast('Updating file binary and database metadata...', 'info');
+    showToast('Updating database metadata...', 'info');
 
     try {
       let newAudioUrl = null;
       let newCloudinaryId = null;
 
       if (newAudioFile) {
-        showToast('Uploading replacement audio file to Cloudinary...', 'info');
-        const formData = new FormData();
-        formData.append('file', newAudioFile);
-        formData.append('title', `${title}-replacement-${Date.now()}`);
+        showToast('Uploading replacement audio file directly to Cloudinary...', 'info');
+        const publicId = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}-replacement-${Date.now()}`;
+        const folder = 'dada-composer/audio';
 
-        const uploadRes = await fetch('/api/upload', {
+        // Get secure signature from server
+        const sigRes = await fetch('/api/cloudinary-signature', {
           method: 'POST',
-          body: formData,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            params: {
+              public_id: publicId,
+              folder,
+            }
+          }),
         });
 
-        if (!uploadRes.ok) throw new Error('Failed to upload replacement audio file');
+        if (!sigRes.ok) throw new Error('Failed to generate audio signature');
+        const { signature, timestamp, apiKey, cloudName } = await sigRes.json();
+
+        // Construct direct upload payload
+        const cloudinaryForm = new FormData();
+        cloudinaryForm.append('file', newAudioFile);
+        cloudinaryForm.append('api_key', apiKey);
+        cloudinaryForm.append('timestamp', timestamp.toString());
+        cloudinaryForm.append('signature', signature);
+        cloudinaryForm.append('public_id', publicId);
+        cloudinaryForm.append('folder', folder);
+
+        // Upload directly to Cloudinary (use resource_type: video for audio files)
+        const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
+          method: 'POST',
+          body: cloudinaryForm,
+        });
+
+        if (!uploadRes.ok) {
+          const errorText = await uploadRes.text();
+          throw new Error(`Direct Cloudinary audio upload failed: ${errorText}`);
+        }
         const uploadData = await uploadRes.json();
         newAudioUrl = uploadData.secure_url;
         newCloudinaryId = uploadData.public_id;
@@ -150,11 +204,11 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to update track file');
+        throw new Error(errorData.error || 'Failed to update track record');
       }
 
       setSuccess(true);
-      showToast('File tags and audio replaced successfully!', 'success');
+      showToast('Track details and audio updated successfully!', 'success');
       setTimeout(() => {
         setSuccess(false);
         setNewAudioFile(null);
@@ -163,7 +217,7 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
       }, 1500);
     } catch (err: any) {
       console.error(err);
-      showToast(err.message || 'Failed to update track file', 'error');
+      showToast(err.message || 'Failed to update track', 'error');
     } finally {
       setSaving(false);
     }

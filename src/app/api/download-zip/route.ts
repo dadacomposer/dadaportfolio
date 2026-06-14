@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import JSZip from 'jszip';
+import NodeID3 from 'node-id3';
+import { WaveFile } from 'wavefile';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,10 +31,67 @@ export async function GET(req: Request) {
     if (!audioRes.ok) {
       return NextResponse.json({ error: 'Failed to fetch audio file from storage' }, { status: 500 });
     }
-    const audioBuffer = await audioRes.arrayBuffer();
+    const audioBuffer = Buffer.from(await audioRes.arrayBuffer());
 
-    // 3. Prepare filenames
-    const originalExt = track.audio_url.split('.').pop()?.split('?')[0] || 'wav';
+    // 3. Fetch artwork image if URL is provided (for MP3 ID3 tag embedding)
+    let artworkBuffer: Buffer | null = null;
+    let artworkMime = 'image/jpeg';
+    if (track.artwork_url) {
+      try {
+        const artRes = await fetch(track.artwork_url);
+        if (artRes.ok) {
+          artworkBuffer = Buffer.from(await artRes.arrayBuffer());
+          artworkMime = artRes.headers.get('content-type') || 'image/jpeg';
+        }
+      } catch (err) {
+        console.error('Failed to download artwork for tagging on-the-fly:', err);
+      }
+    }
+
+    // 4. Modify file buffer according to its format
+    const originalExt = track.audio_url.split('.').pop()?.split('?')[0]?.toLowerCase() || 'wav';
+    let updatedBuffer = audioBuffer;
+
+    if (originalExt === 'mp3') {
+      const tags: any = {
+        title: track.title,
+        artist: track.artist || 'DADA',
+        album: track.album || 'DADA Portfolio',
+      };
+      if (track.bpm) {
+        tags.bpm = String(track.bpm);
+      }
+
+      if (artworkBuffer) {
+        tags.image = {
+          mime: artworkMime,
+          type: {
+            id: 3,
+            name: 'front cover'
+          },
+          description: 'Cover Art',
+          imageBuffer: artworkBuffer
+        };
+      }
+
+      try {
+        updatedBuffer = NodeID3.write(tags, audioBuffer) as any;
+      } catch (err) {
+        console.error('Failed to write MP3 ID3 tags during download:', err);
+      }
+    } else if (originalExt === 'wav') {
+      try {
+        const wav = new WaveFile(audioBuffer);
+        wav.setTag('INAM', track.title);
+        wav.setTag('IART', track.artist || 'DADA');
+        wav.setTag('IPRD', track.album || 'DADA Portfolio');
+        updatedBuffer = Buffer.from(wav.toBuffer());
+      } catch (err) {
+        console.error('Failed to write WAV tags during download:', err);
+      }
+    }
+
+    // 5. Prepare filenames
     const formattedTitle = track.title
       .replace(/\s+/g, '-')
       .replace(/[^a-zA-Z0-9-]/g, '')
@@ -43,18 +102,18 @@ export async function GET(req: Request) {
     const zipFolderName = `${formattedTitle}-DADA`;
     const audioFileName = `${formattedTitle}-DADA-main-version-${durationStr}.${originalExt}`;
 
-    // 4. Create ZIP
+    // 6. Create ZIP
     const zip = new JSZip();
     const folder = zip.folder(zipFolderName);
     if (folder) {
-      folder.file(audioFileName, audioBuffer);
+      folder.file(audioFileName, updatedBuffer);
     } else {
-      zip.file(audioFileName, audioBuffer);
+      zip.file(audioFileName, updatedBuffer);
     }
 
     const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
 
-    // 5. Save approval/download notification to comments in database (like client-side used to do)
+    // 7. Save approval/download notification to comments in database
     try {
       const approvalText = `★ APPROVED: Track approved and ZIP downloaded (main-version-${durationStr}.${originalExt}).`;
       await supabase.from('comments').insert([{
@@ -66,7 +125,7 @@ export async function GET(req: Request) {
       console.error('Failed to log approval comment:', err);
     }
 
-    // 6. Return ZIP response
+    // 8. Return ZIP response
     return new Response(zipBuffer as any, {
       headers: {
         'Content-Type': 'application/zip',

@@ -20,18 +20,48 @@ export default function UploadTrackModal({ isOpen, onClose, onSuccess }: { isOpe
     showToast('Uploading track to Cloudinary...', 'info');
 
     try {
-      // 1. Upload to Cloudinary via our Next.js API
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('title', title);
+      // 1. Upload to Cloudinary directly from client (Direct-to-Cloudinary)
+      const publicId = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const folder = 'dada-composer/audio';
+      const context = `title=${title}`;
 
-      const res = await fetch('/api/upload', {
+      // Get secure signature from server
+      const sigRes = await fetch('/api/cloudinary-signature', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          params: {
+            public_id: publicId,
+            folder,
+            context,
+          }
+        }),
       });
 
-      if (!res.ok) throw new Error('Cloudinary upload failed');
-      const cloudinaryData = await res.json();
+      if (!sigRes.ok) throw new Error('Failed to generate upload signature');
+      const { signature, timestamp, apiKey, cloudName } = await sigRes.json();
+
+      // Construct direct upload payload
+      const cloudinaryForm = new FormData();
+      cloudinaryForm.append('file', file);
+      cloudinaryForm.append('api_key', apiKey);
+      cloudinaryForm.append('timestamp', timestamp.toString());
+      cloudinaryForm.append('signature', signature);
+      cloudinaryForm.append('public_id', publicId);
+      cloudinaryForm.append('folder', folder);
+      cloudinaryForm.append('context', context);
+
+      // Cloudinary direct upload endpoint (use resource_type: video for audio files)
+      const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
+        method: 'POST',
+        body: cloudinaryForm,
+      });
+
+      if (!uploadRes.ok) {
+        const errorText = await uploadRes.text();
+        throw new Error(`Direct Cloudinary upload failed: ${errorText}`);
+      }
+      const cloudinaryData = await uploadRes.json();
 
       // 2. Perform Web Audio API analysis for BPM and Zero Crossing Rate
       showToast('Analyzing track spectrum (BPM & Frequencies)...', 'info');
@@ -78,9 +108,9 @@ export default function UploadTrackModal({ isOpen, onClose, onSuccess }: { isOpe
         onClose();
       }, 2000);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      showToast('Upload failed!', 'error');
+      showToast(err.message || 'Upload failed!', 'error');
     } finally {
       setUploading(false);
     }
