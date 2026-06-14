@@ -54,18 +54,17 @@ export default function ShareCommentSystem({
 
     const decodeAudio = async () => {
       try {
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-        if (!AudioCtx) return;
+        const OfflineAudioCtx = window.OfflineAudioContext || (window as any).webkitOfflineAudioContext;
+        if (!OfflineAudioCtx) return;
 
         // Fetch the audio track (CORS allowed by Cloudinary)
         const res = await fetch(track.audio_url);
         if (!res.ok) throw new Error('Fetch audio file failed');
         const arrayBuffer = await res.arrayBuffer();
 
-        // Decode the audio data using a temporary AudioContext
-        const tempCtx = new AudioCtx();
+        // Decode the audio data using a temporary OfflineAudioContext to bypass browser autoplay/gesture constraints
+        const tempCtx = new OfflineAudioCtx(1, 1, 44100);
         const audioBuffer = await tempCtx.decodeAudioData(arrayBuffer);
-        tempCtx.close();
 
         if (isCancelled) return;
 
