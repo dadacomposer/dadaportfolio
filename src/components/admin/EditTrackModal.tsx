@@ -16,6 +16,8 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
   const [artist, setArtist] = useState('');
   const [album, setAlbum] = useState('');
   const [artworkUrl, setArtworkUrl] = useState('');
+  const [bpm, setBpm] = useState('');
+  const [keywords, setKeywords] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -28,6 +30,8 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
       setArtist(track.artist || '');
       setAlbum(track.album || '');
       setArtworkUrl(track.artwork_url || `/artworks/${track.title}.jpg`);
+      setBpm(track.bpm ? String(track.bpm) : '');
+      setKeywords(track.keywords || '');
     }
   }, [track, isOpen]);
 
@@ -81,6 +85,8 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
           artist,
           album,
           artworkUrl,
+          bpm: bpm ? parseInt(bpm) : null,
+          keywords,
         }),
       });
 
@@ -157,6 +163,29 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
                       onChange={(e) => setAlbum(e.target.value)}
                       className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white/50 transition-colors text-sm"
                       placeholder="e.g. DADA Portfolio"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-1">
+                    <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">BPM</label>
+                    <input
+                      type="number"
+                      value={bpm}
+                      onChange={(e) => setBpm(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white/50 transition-colors text-sm font-mono"
+                      placeholder="e.g. 90"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">Tags / Keywords</label>
+                    <input
+                      type="text"
+                      value={keywords}
+                      onChange={(e) => setKeywords(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-white/50 transition-colors text-sm"
+                      placeholder="e.g. Cinematic, Ambient"
                     />
                   </div>
                 </div>

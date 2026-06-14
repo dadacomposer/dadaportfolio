@@ -40,7 +40,7 @@ export default function Navbar() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.5 }}
       >
-        <Link href="/#hero" className="text-xl font-bold tracking-tighter text-white flex items-baseline justify-self-start">
+        <Link href="https://www.dadacomposer.com/" className="text-xl font-bold tracking-tighter text-white flex items-baseline justify-self-start">
           DADA<span className="text-accent">.</span>
           <span className="text-xl text-white/40 ml-0.5 tracking-tighter font-medium">COMPOSER</span>
         </Link>

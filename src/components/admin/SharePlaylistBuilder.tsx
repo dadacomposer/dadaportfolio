@@ -42,8 +42,38 @@ export default function SharePlaylistBuilder({
 
       if (error) throw error;
 
-      setGeneratedLink(`${window.location.origin}/share/${slug}`);
+      const link = `${window.location.origin}/share/${slug}`;
+      setGeneratedLink(link);
       showToast('Playlist created successfully!', 'success');
+
+      // Trigger Slack notification for Musicvine shares to Daniel's phone
+      if (permission === 'musicvine') {
+        try {
+          let trackTitles = '';
+          if (selectedTracks.length > 0) {
+            const { data: tracksData } = await supabase
+              .from('tracks')
+              .select('title')
+              .in('id', selectedTracks);
+            if (tracksData && tracksData.length > 0) {
+              trackTitles = tracksData.map(t => `"${t.title}"`).join(', ');
+            }
+          }
+
+          fetch('/api/notify-slack', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              trackTitle: trackTitles || 'Multiple Tracks',
+              playlistTitle: title,
+              type: 'share_created',
+              shareLink: link
+            })
+          });
+        } catch (slackErr) {
+          console.error('Failed to send share notification to Slack:', slackErr);
+        }
+      }
     } catch (err) {
       console.error(err);
       showToast('Failed to create playlist', 'error');

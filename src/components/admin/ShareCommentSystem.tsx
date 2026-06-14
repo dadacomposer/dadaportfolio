@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Download, Copy, Send, CheckCircle, Music, Loader2, FileArchive } from 'lucide-react';
+import { Play, Pause, Download, Copy, Send, CheckCircle, Music, Loader2, FileArchive, Link as LinkIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/context/ToastContext';
@@ -115,65 +115,8 @@ export default function ShareCommentSystem({
     showToast('Preparing Musicvine ZIP package...', 'info');
 
     try {
-      const audioUrl = track.audio_url;
-      
-      // Get exact duration in minutes-seconds
-      const durationStr = await new Promise<string>((resolve) => {
-        const tempAudio = new Audio();
-        tempAudio.src = audioUrl;
-        tempAudio.addEventListener('loadedmetadata', () => {
-          const dur = tempAudio.duration;
-          const mins = Math.floor(dur / 60);
-          const secs = Math.round(dur % 60);
-          resolve(`${mins}-${secs}`);
-        });
-        tempAudio.addEventListener('error', () => {
-          if (duration > 0) {
-            const mins = Math.floor(duration / 60);
-            const secs = Math.round(duration % 60);
-            resolve(`${mins}-${secs}`);
-          } else {
-            resolve('2-30'); // Fallback default
-          }
-        });
-      });
-
-      // Fetch the audio file as a Blob
-      const response = await fetch(audioUrl);
-      if (!response.ok) throw new Error('Failed to fetch audio file');
-      const blob = await response.blob();
-
-      // Format title to use hyphens instead of spaces
-      const formattedTitle = track.title
-        .replace(/\s+/g, '-')
-        .replace(/[^a-zA-Z0-9-]/g, '')
-        .replace(/-+/g, '-');
-      
-      const zipFolderName = `${formattedTitle}-DADA`;
-      const originalExt = audioUrl.split('.').pop()?.split('?')[0] || 'wav';
-      const audioFileName = `${formattedTitle}-DADA-main-version-${durationStr}.${originalExt}`;
-
-      // Package ZIP using JSZip
-      const JSZip = (await import('jszip')).default;
-      const zip = new JSZip();
-      
-      const folder = zip.folder(zipFolderName);
-      if (folder) {
-        folder.file(audioFileName, blob);
-      } else {
-        zip.file(audioFileName, blob);
-      }
-
-      const content = await zip.generateAsync({ type: 'blob' });
-      
-      // Trigger download
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(content);
-      link.download = `${zipFolderName}.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
+      const originalExt = track.audio_url.split('.').pop()?.split('?')[0] || 'wav';
+      const durationStr = (track.duration || '2-30').replace(':', '-');
       const approvalText = `★ APPROVED: Track approved and ZIP downloaded (main-version-${durationStr}.${originalExt}).`;
 
       // Save notification to database comments
@@ -196,14 +139,23 @@ export default function ShareCommentSystem({
         })
       }).catch(err => console.error('Slack notify error:', err));
 
+      // Trigger server-side download
+      window.location.href = `/api/download-zip?trackId=${track.id}`;
+
       setIsApproved(true);
       showToast('ZIP downloaded & approval notification sent!', 'success');
     } catch (err) {
       console.error(err);
-      showToast('Failed to package ZIP', 'error');
+      showToast('Failed to trigger download', 'error');
     } finally {
       setIsZipping(false);
     }
+  };
+
+  const copyZipLink = () => {
+    const directUrl = `${window.location.origin}/api/download-zip?trackId=${track.id}`;
+    navigator.clipboard.writeText(directUrl);
+    showToast('Direct ZIP download link copied!', 'success');
   };
 
   const copyAllFeedback = () => {
@@ -327,72 +279,132 @@ export default function ShareCommentSystem({
 
       {/* Musicvine Feedback Area */}
       {permissionLevel === 'musicvine' && (
-        <div className="mt-8 pt-6 border-t border-white/10 space-y-4">
-          <div className="flex items-center justify-between">
-            <label className="block text-xs uppercase tracking-widest text-accent font-bold">
-              Feedback / Review Notes
-            </label>
-            {saved && (
-              <span className="text-green-400 text-xs flex items-center gap-1">
-                <CheckCircle size={12} /> Feedback Sent ✓
-              </span>
-            )}
-          </div>
+        <div className="mt-8 pt-6 border-t border-white/10 space-y-6">
           
-          <div className="relative">
-            <textarea 
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="Leave comments, concerns or revision requests here..."
-              className="w-full bg-black/50 border border-white/10 rounded-2xl p-4 min-h-[90px] text-sm focus:outline-none focus:border-accent transition-colors resize-y text-white/90"
-            />
+          {/* Musicvine Metadata Grid */}
+          <div className="p-5 bg-white/5 border border-white/10 rounded-2xl space-y-4 backdrop-blur-sm">
+            <h4 className="text-xs uppercase tracking-widest text-accent font-bold">Music Vine Track Metadata</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-black/30 p-3 rounded-xl border border-white/5">
+                <span className="block text-[10px] uppercase tracking-wider text-white/40">1. Full Name</span>
+                <span className="text-sm font-semibold text-white">Daniel Angelucci</span>
+              </div>
+              <div className="bg-black/30 p-3 rounded-xl border border-white/5">
+                <span className="block text-[10px] uppercase tracking-wider text-white/40">2. Artist Profile</span>
+                <span className="text-sm font-semibold text-white">DADA</span>
+              </div>
+              <div className="bg-black/30 p-3 rounded-xl border border-white/5">
+                <span className="block text-[10px] uppercase tracking-wider text-white/40">3. Track Title</span>
+                <span className="text-sm font-semibold text-white uppercase tracking-tight">{track.title}</span>
+              </div>
+              <div className="bg-black/30 p-3 rounded-xl border border-white/5">
+                <span className="block text-[10px] uppercase tracking-wider text-white/40">4. Exclusivity</span>
+                <span className="text-sm font-semibold text-white">Exclusive</span>
+              </div>
+              <div className="bg-black/30 p-3 rounded-xl border border-white/5">
+                <span className="block text-[10px] uppercase tracking-wider text-white/40">5. Publishing Rights</span>
+                <span className="text-sm font-semibold text-white">Yes</span>
+              </div>
+              <div className="bg-black/30 p-3 rounded-xl border border-white/5">
+                <span className="block text-[10px] uppercase tracking-wider text-white/40">6. BPM</span>
+                <span className="text-sm font-bold text-accent font-mono">{track.bpm || 80}</span>
+              </div>
+              <div className="bg-black/30 p-3 rounded-xl border border-white/5">
+                <span className="block text-[10px] uppercase tracking-wider text-white/40">7. Number of Versions</span>
+                <span className="text-sm font-semibold text-white">1</span>
+              </div>
+              <div className="bg-black/30 p-3 rounded-xl border border-white/5 col-span-2 md:col-span-4">
+                <span className="block text-[10px] uppercase tracking-wider text-white/40 mb-1">8. Relevant Keywords</span>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {(track.keywords || "Cinematic, Ambient, Production Music")
+                    .split(', ')
+                    .map((kw: string, i: number) => (
+                      <span key={i} className="text-[10px] bg-white/10 hover:bg-white/15 text-white/80 px-2 py-0.5 rounded-full border border-white/5 transition-colors">
+                        {kw}
+                      </span>
+                    ))}
+                </div>
+              </div>
+            </div>
           </div>
-          
-          <div className="flex flex-wrap gap-4 items-center justify-between">
-            {/* Actions (Left: Copy All & Send Feedback) */}
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={saveComment}
-                disabled={!comment.trim() || saving}
-                className="bg-accent text-white font-bold px-6 py-3 rounded-full text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-accent/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-              >
-                {saving ? <Loader2 className="animate-spin" size={14} /> : <Send size={14} />}
-                {saved ? 'Feedback Sent ✓' : 'Send Feedback'}
-              </button>
 
-              {index === 0 && (
-                <button 
-                  onClick={copyAllFeedback}
-                  className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors border border-white/10"
-                  title="Copy All Feedback to Clipboard"
-                >
-                  <Copy size={16} className="text-white/80" />
-                </button>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs uppercase tracking-widest text-accent font-bold">
+                Feedback / Review Notes
+              </label>
+              {saved && (
+                <span className="text-green-400 text-xs flex items-center gap-1">
+                  <CheckCircle size={12} /> Feedback Sent ✓
+                </span>
               )}
             </div>
+            
+            <div className="relative">
+              <textarea 
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Leave comments, concerns or revision requests here..."
+                className="w-full bg-black/50 border border-white/10 rounded-2xl p-4 min-h-[90px] text-sm focus:outline-none focus:border-accent transition-colors resize-y text-white/90"
+              />
+            </div>
+            
+            <div className="flex flex-wrap gap-4 items-center justify-between">
+              {/* Actions (Left: Copy All & Send Feedback) */}
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={saveComment}
+                  disabled={!comment.trim() || saving}
+                  className="bg-accent text-white font-bold px-6 py-3 rounded-full text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-accent/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                >
+                  {saving ? <Loader2 className="animate-spin" size={14} /> : <Send size={14} />}
+                  {saved ? 'Feedback Sent ✓' : 'Send Feedback'}
+                </button>
 
-            {/* Right: Musicvine Zip Download */}
-            <button
-              onClick={handleApproveAndDownload}
-              disabled={isZipping}
-              className={`font-bold px-6 py-3 rounded-full text-xs uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg ${
-                isApproved 
-                  ? 'bg-green-500 hover:bg-green-600 text-white' 
-                  : 'bg-white text-black hover:bg-white/80'
-              }`}
-            >
-              {isZipping ? (
-                <>
-                  <Loader2 className="animate-spin" size={14} />
-                  Packaging ZIP...
-                </>
-              ) : (
-                <>
-                  <FileArchive size={14} />
-                  {isApproved ? 'Approved & Downloaded ✓' : 'Approve & Download ZIP'}
-                </>
-              )}
-            </button>
+                {index === 0 && (
+                  <button 
+                    onClick={copyAllFeedback}
+                    className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors border border-white/10"
+                    title="Copy All Feedback to Clipboard"
+                  >
+                    <Copy size={16} className="text-white/80" />
+                  </button>
+                )}
+              </div>
+
+              {/* Right: Musicvine Zip Download & Copy Link */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleApproveAndDownload}
+                  disabled={isZipping}
+                  className={`font-bold px-6 py-3 rounded-full text-xs uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg ${
+                    isApproved 
+                      ? 'bg-green-500 hover:bg-green-600 text-white' 
+                      : 'bg-white text-black hover:bg-white/80'
+                  }`}
+                >
+                  {isZipping ? (
+                    <>
+                      <Loader2 className="animate-spin" size={14} />
+                      Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <FileArchive size={14} />
+                      {isApproved ? 'Downloaded ✓' : 'Download ZIP'}
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={copyZipLink}
+                  className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors border border-white/10 text-white"
+                  title="Copy Direct ZIP Download Link"
+                >
+                  <LinkIcon size={16} />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

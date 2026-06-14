@@ -12,7 +12,7 @@ cloudinary.config({
 
 export async function POST(req: Request) {
   try {
-    const { trackId, title, artist, album, artworkUrl } = await req.json();
+    const { trackId, title, artist, album, artworkUrl, bpm, keywords } = await req.json();
 
     if (!trackId || !title) {
       return NextResponse.json({ error: 'Missing trackId or title' }, { status: 400 });
@@ -59,6 +59,9 @@ export async function POST(req: Request) {
         artist: artist || 'DADA',
         album: album || 'DADA Portfolio',
       };
+      if (bpm) {
+        tags.bpm = String(bpm);
+      }
 
       if (artworkBuffer) {
         tags.image = {
@@ -106,7 +109,9 @@ export async function POST(req: Request) {
         artist: artist || 'DADA',
         album: album || 'DADA Portfolio',
         artwork_url: artworkUrl || null,
-        audio_url: uploadResult.secure_url
+        audio_url: uploadResult.secure_url,
+        bpm: bpm ? parseInt(bpm) : null,
+        keywords: keywords || null
       })
       .eq('id', trackId);
 

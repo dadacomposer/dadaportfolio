@@ -86,18 +86,35 @@ export default function AdminDashboard() {
   const handleQuickShare = async (track: any) => {
     try {
       const slug = Math.random().toString(36).substring(2, 10);
+      
       const { error } = await supabase.from('playlists').insert([{
-        title: track.title,
+        title: `${track.title} (Single Share)`,
         slug,
         track_ids: [track.id],
-        permission_level: 'view'
+        permission_level: 'musicvine'
       }]);
 
       if (error) throw error;
 
       const shareUrl = `${window.location.origin}/share/${slug}`;
       await navigator.clipboard.writeText(shareUrl);
-      showToast(`Quick share link generated and copied to clipboard!`, 'success');
+      showToast(`Quick Musicvine share link generated & copied to clipboard!`, 'success');
+
+      // Trigger Slack Notification (Daniels phone)
+      try {
+        await fetch('/api/notify-slack', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            trackTitle: `"${track.title}"`,
+            playlistTitle: `${track.title} (Single Share)`,
+            type: 'share_created',
+            shareLink: shareUrl
+          })
+        });
+      } catch (slackErr) {
+        console.error('Failed to notify Slack:', slackErr);
+      }
     } catch (err) {
       console.error(err);
       showToast('Failed to generate quick share link', 'error');
