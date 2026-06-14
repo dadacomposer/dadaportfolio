@@ -172,6 +172,62 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeletePlaylist = async (playlistId: string) => {
+    const confirmDelete = window.confirm('Are you sure you want to deactivate and delete this share link? This will permanently disable the link and delete all comments.');
+    if (!confirmDelete) return;
+
+    try {
+      // First delete comments to satisfy foreign key constraints just in case
+      await supabase.from('comments').delete().eq('playlist_id', playlistId);
+      
+      // Then delete the playlist itself
+      const { error } = await supabase
+        .from('playlists')
+        .delete()
+        .eq('id', playlistId);
+
+      if (error) throw error;
+
+      showToast('Share link deleted & deactivated!', 'success');
+      
+      if (activePlaylistId === playlistId) {
+        setActivePlaylistId('');
+      }
+      
+      fetchPlaylists();
+      fetchComments();
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to delete share link', 'error');
+    }
+  };
+
+  const handleDeleteAllPlaylists = async () => {
+    const confirmDelete = window.confirm('WARNING: Are you sure you want to delete and deactivate ALL shared links? This will permanently deactivate every link you have ever created and clear all chat logs. This cannot be undone.');
+    if (!confirmDelete) return;
+
+    try {
+      // Clear all comments
+      await supabase.from('comments').delete().neq('author', 'doesnotexist');
+      
+      // Clear all playlists
+      const { error } = await supabase
+        .from('playlists')
+        .delete()
+        .neq('slug', 'doesnotexist');
+
+      if (error) throw error;
+
+      showToast('All share links successfully deleted & deactivated!', 'success');
+      setActivePlaylistId('');
+      fetchPlaylists();
+      fetchComments();
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to delete all links', 'error');
+    }
+  };
+
   const handleQuickShareView = async (track: any) => {
     try {
       const slug = Math.random().toString(36).substring(2, 10);
@@ -408,146 +464,206 @@ export default function AdminDashboard() {
           </div>
 
           {/* Real-time Chat Log Sidebar (Right Column) */}
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 h-fit backdrop-blur-sm">
-            <h2 className="text-xl font-bold uppercase tracking-tighter mb-6 flex items-center gap-2">
-              <MessageSquare size={20} className="text-accent" />
-              Playlist Chat & Log
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
-            </h2>
+          <div className="space-y-8">
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 h-fit backdrop-blur-sm">
+              <h2 className="text-xl font-bold uppercase tracking-tighter mb-6 flex items-center gap-2">
+                <MessageSquare size={20} className="text-accent" />
+                Playlist Chat & Log
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
+              </h2>
 
-            {/* Playlist Selector Dropdown */}
-            <div className="mb-4">
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-xs uppercase tracking-widest text-white/50">Select Shared Link / Playlist</label>
-                {activePlaylistId && (
-                  <button
-                    onClick={handleResetLog}
-                    className="text-red-400 hover:text-red-300 text-[10px] uppercase tracking-wider font-bold transition-colors cursor-pointer"
-                    title="Clear all comments, reviews, and notifications for this playlist"
-                  >
-                    Reset Log
-                  </button>
-                )}
+              {/* Playlist Selector Dropdown */}
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-xs uppercase tracking-widest text-white/50">Select Shared Link / Playlist</label>
+                  {activePlaylistId && (
+                    <button
+                      onClick={handleResetLog}
+                      className="text-red-400 hover:text-red-300 text-[10px] uppercase tracking-wider font-bold transition-colors cursor-pointer"
+                      title="Clear all comments, reviews, and notifications for this playlist"
+                    >
+                      Reset Log
+                    </button>
+                  )}
+                </div>
+                <select
+                  value={activePlaylistId}
+                  onChange={(e) => setActivePlaylistId(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-accent"
+                >
+                  {playlists.map((pl) => (
+                    <option key={pl.id} value={pl.id} className="bg-deepblack text-white">
+                      {pl.title} ({pl.slug})
+                    </option>
+                  ))}
+                  {playlists.length === 0 && (
+                    <option value="">No playlists shared yet</option>
+                  )}
+                </select>
               </div>
-              <select
-                value={activePlaylistId}
-                onChange={(e) => setActivePlaylistId(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-accent"
-              >
-                {playlists.map((pl) => (
-                  <option key={pl.id} value={pl.id} className="bg-deepblack text-white">
-                    {pl.title} ({pl.slug})
-                  </option>
-                ))}
-                {playlists.length === 0 && (
-                  <option value="">No playlists shared yet</option>
-                )}
-              </select>
-            </div>
 
-            <div className="border border-white/10 rounded-2xl bg-black/40 flex flex-col h-[400px] overflow-hidden">
-              {/* Chat Message List */}
-              <div className="flex-grow overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/15">
-                {activePlaylistId ? (
-                  comments
-                    .filter(c => c.playlist_id === activePlaylistId)
-                    .slice() // Copy array
-                    .reverse() // Display chronological: oldest at top, newest at bottom
-                    .map((comment) => {
-                      const isMe = comment.author === 'DADA' || comment.author === 'Daniel';
-                      const isSystem = comment.author === 'System Notification';
-                      const isApproval = comment.text.startsWith('★ APPROVED:');
-                      const isRejection = comment.text.startsWith('✗ REJECTED:');
-                      
-                      if (isSystem || isApproval || isRejection) {
+              <div className="border border-white/10 rounded-2xl bg-black/40 flex flex-col h-[400px] overflow-hidden">
+                {/* Chat Message List */}
+                <div className="flex-grow overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/15">
+                  {activePlaylistId ? (
+                    comments
+                      .filter(c => c.playlist_id === activePlaylistId)
+                      .slice() // Copy array
+                      .reverse() // Display chronological: oldest at top, newest at bottom
+                      .map((comment) => {
+                        const isMe = comment.author === 'DADA' || comment.author === 'Daniel';
+                        const isSystem = comment.author === 'System Notification';
+                        const isApproval = comment.text.startsWith('★ APPROVED:');
+                        const isRejection = comment.text.startsWith('✗ REJECTED:');
+                        
+                        if (isSystem || isApproval || isRejection) {
+                          return (
+                            <div key={comment.id} className="flex flex-col items-center py-1 group/msg">
+                              <span className={`text-[10px] uppercase tracking-wider px-3 py-1 rounded-full border ${
+                                isApproval 
+                                  ? 'bg-green-500/10 text-green-400 border-green-500/20' 
+                                  : isRejection 
+                                    ? 'bg-red-500/10 text-red-400 border-red-500/20' 
+                                    : 'bg-white/5 text-white/40 border-white/5'
+                              } flex items-center gap-1.5`}>
+                                {comment.text}
+                                <button 
+                                  onClick={() => handleDeleteComment(comment.id)} 
+                                  className="opacity-0 group-hover/msg:opacity-100 hover:text-red-400 text-[10px] ml-1 transition-opacity cursor-pointer"
+                                  title="Delete Status Log"
+                                >
+                                  ✕
+                                </button>
+                              </span>
+                            </div>
+                          );
+                        }
+                        
                         return (
-                          <div key={comment.id} className="flex flex-col items-center py-1 group/msg">
-                            <span className={`text-[10px] uppercase tracking-wider px-3 py-1 rounded-full border ${
-                              isApproval 
-                                ? 'bg-green-500/10 text-green-400 border-green-500/20' 
-                                : isRejection 
-                                  ? 'bg-red-500/10 text-red-400 border-red-500/20' 
-                                  : 'bg-white/5 text-white/40 border-white/5'
-                            } flex items-center gap-1.5`}>
-                              {comment.text}
-                              <button 
-                                onClick={() => handleDeleteComment(comment.id)} 
-                                className="opacity-0 group-hover/msg:opacity-100 hover:text-red-400 text-[10px] ml-1 transition-opacity cursor-pointer"
-                                title="Delete Status Log"
+                          <div key={comment.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group/msg relative`}>
+                            <div className={`max-w-[80%] p-3 rounded-2xl text-xs relative ${
+                              isMe 
+                                ? 'bg-accent text-white rounded-tr-none' 
+                                : 'bg-white/10 text-white rounded-tl-none'
+                            }`}>
+                              <div className="flex justify-between items-center gap-4 text-[9px] text-white/40 mb-1">
+                                <span className="font-bold text-white/60">{comment.author}</span>
+                                <span>{new Date(comment.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                              </div>
+                              
+                              {comment.tracks?.title && (
+                                <div className="text-[10px] text-white/50 font-semibold uppercase tracking-tight mb-1">
+                                  🎵 {comment.tracks.title}
+                                </div>
+                              )}
+                              
+                              <p className="whitespace-pre-wrap">{comment.text}</p>
+                              
+                              {/* Delete Hover button */}
+                              <button
+                                onClick={() => handleDeleteComment(comment.id)}
+                                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover/msg:opacity-100 transition-opacity cursor-pointer shadow-lg hover:bg-red-600 text-[9px]"
+                                title="Delete Message"
                               >
                                 ✕
                               </button>
-                            </span>
+                            </div>
                           </div>
                         );
+                      })
+                  ) : (
+                    <p className="text-white/30 text-center text-xs py-12">No active playlist selected.</p>
+                  )}
+                  {activePlaylistId && comments.filter(c => c.playlist_id === activePlaylistId).length === 0 && (
+                    <div className="text-center text-white/30 text-xs py-12 px-4 space-y-2">
+                      <p className="uppercase tracking-widest font-semibold">No Conversation Yet</p>
+                      <p className="text-[10px] text-white/20 normal-case">Lia's comments and your replies will appear here in real-time.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Chat Input Area */}
+                <div className="p-3 border-t border-white/10 bg-black/20 flex gap-2">
+                  <input
+                    type="text"
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSendReply();
                       }
-                      
-                      return (
-                        <div key={comment.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group/msg relative`}>
-                          <div className={`max-w-[80%] p-3 rounded-2xl text-xs relative ${
-                            isMe 
-                              ? 'bg-accent text-white rounded-tr-none' 
-                              : 'bg-white/10 text-white rounded-tl-none'
-                          }`}>
-                            <div className="flex justify-between items-center gap-4 text-[9px] text-white/40 mb-1">
-                              <span className="font-bold text-white/60">{comment.author}</span>
-                              <span>{new Date(comment.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                            </div>
-                            
-                            {comment.tracks?.title && (
-                              <div className="text-[10px] text-white/50 font-semibold uppercase tracking-tight mb-1">
-                                🎵 {comment.tracks.title}
-                              </div>
-                            )}
-                            
-                            <p className="whitespace-pre-wrap">{comment.text}</p>
-                            
-                            {/* Delete Hover button */}
-                            <button
-                              onClick={() => handleDeleteComment(comment.id)}
-                              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover/msg:opacity-100 transition-opacity cursor-pointer shadow-lg hover:bg-red-600 text-[9px]"
-                              title="Delete Message"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })
-                ) : (
-                  <p className="text-white/30 text-center text-xs py-12">No active playlist selected.</p>
-                )}
-                {activePlaylistId && comments.filter(c => c.playlist_id === activePlaylistId).length === 0 && (
-                  <div className="text-center text-white/30 text-xs py-12 px-4 space-y-2">
-                    <p className="uppercase tracking-widest font-semibold">No Conversation Yet</p>
-                    <p className="text-[10px] text-white/20 normal-case">Lia's comments and your replies will appear here in real-time.</p>
-                  </div>
+                    }}
+                    placeholder="Type a message to Lia..."
+                    className="flex-grow bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-accent"
+                    disabled={!activePlaylistId || sendingReply}
+                  />
+                  <button
+                    onClick={handleSendReply}
+                    disabled={!replyText.trim() || !activePlaylistId || sendingReply}
+                    className="bg-white text-black font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-widest hover:bg-white/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Send
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Shared Links Manager */}
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 h-fit backdrop-blur-sm">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold uppercase tracking-tighter flex items-center gap-2">
+                  <LinkIcon size={20} className="text-accent" />
+                  Shared Links
+                </h2>
+                {playlists.length > 0 && (
+                  <button
+                    onClick={handleDeleteAllPlaylists}
+                    className="text-red-400 hover:text-red-300 text-[10px] uppercase tracking-wider font-bold transition-colors cursor-pointer"
+                    title="Deactivate and delete all shared links"
+                  >
+                    Deactivate All
+                  </button>
                 )}
               </div>
 
-              {/* Chat Input Area */}
-              <div className="p-3 border-t border-white/10 bg-black/20 flex gap-2">
-                <input
-                  type="text"
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleSendReply();
-                    }
-                  }}
-                  placeholder="Type a message to Lia..."
-                  className="flex-grow bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-accent"
-                  disabled={!activePlaylistId || sendingReply}
-                />
-                <button
-                  onClick={handleSendReply}
-                  disabled={!replyText.trim() || !activePlaylistId || sendingReply}
-                  className="bg-white text-black font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-widest hover:bg-white/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Send
-                </button>
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/15">
+                {playlists.map((pl) => (
+                  <div key={pl.id} className="p-3 bg-black/30 border border-white/5 rounded-xl flex items-center justify-between gap-4 group">
+                    <div className="min-w-0 flex-grow">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-white truncate block uppercase tracking-tight">{pl.title}</span>
+                        <span className={`text-[8px] uppercase tracking-wider px-1.5 py-0.5 rounded-md border font-mono ${
+                          pl.permission_level === 'musicvine'
+                            ? 'bg-red-500/10 text-[#ff5a60] border-red-500/20'
+                            : pl.permission_level === 'download'
+                              ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                              : 'bg-white/5 text-white/50 border-white/5'
+                        }`}>
+                          {pl.permission_level}
+                        </span>
+                      </div>
+                      <a
+                        href={`/share/${pl.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] text-white/40 hover:text-accent font-mono transition-colors block mt-1 hover:underline truncate"
+                      >
+                        /share/{pl.slug}
+                      </a>
+                    </div>
+                    <button
+                      onClick={() => handleDeletePlaylist(pl.id)}
+                      className="text-white/30 hover:text-red-400 p-1.5 rounded bg-white/5 hover:bg-white/10 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer shrink-0"
+                      title="Delete & Deactivate Link"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
+                {playlists.length === 0 && (
+                  <p className="text-xs text-white/30 text-center py-6">No shared links created yet.</p>
+                )}
               </div>
             </div>
           </div>
