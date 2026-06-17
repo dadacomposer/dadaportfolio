@@ -10,7 +10,7 @@ function DesktopIsland({ translateY }: { translateY: number }) {
   const {
     isPlaying, togglePlay, currentTrackTitle,
     progress, duration, currentTime, seek, nextTrack, prevTrack,
-    currentTrackArtwork,
+    analyzerData, currentTrackArtwork,
   } = useAudio();
 
   const fmt = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
@@ -44,11 +44,13 @@ function DesktopIsland({ translateY }: { translateY: number }) {
                 <span className="text-[10px] font-medium text-white truncate uppercase tracking-widest">{currentTrackTitle}</span>
                 <span className="text-[8px] text-accent/60 uppercase tracking-[0.2em] font-light">Playing</span>
               </div>
-              <motion.div
-                animate={isPlaying ? { scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] } : { scale: 1, opacity: 0.4 }}
-                transition={isPlaying ? { duration: 1.4, repeat: Infinity, ease: 'easeInOut' } : {}}
-                className="w-1.5 h-1.5 rounded-full bg-accent shrink-0"
-              />
+              <div className="flex items-center gap-[3px] h-4 shrink-0">
+                {analyzerData.map((val, i) => (
+                  <motion.div key={i} className="w-[1.5px] bg-accent rounded-full"
+                    animate={{ height: isPlaying ? `${Math.max(20, val * 100)}%` : '20%' }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 20 }} />
+                ))}
+              </div>
             </motion.div>
           ) : (
             <motion.div key="expanded" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -101,7 +103,7 @@ function MobileIsland({ translateY }: { translateY: number }) {
   const {
     isPlaying, togglePlay, currentTrackTitle,
     progress, duration, currentTime, seek, nextTrack, prevTrack,
-    currentTrackArtwork,
+    analyzerData, currentTrackArtwork,
   } = useAudio();
 
   const fmt = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
@@ -144,11 +146,13 @@ function MobileIsland({ translateY }: { translateY: number }) {
                 {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
               </button>
               {/* Waveform indicator */}
-              <motion.div
-                animate={isPlaying ? { scale: [1, 1.4, 1], opacity: [0.5, 1, 0.5] } : { scale: 1, opacity: 0.3 }}
-                transition={isPlaying ? { duration: 1.4, repeat: Infinity, ease: 'easeInOut' } : {}}
-                className="w-2 h-2 rounded-full bg-accent shrink-0 ml-1"
-              />
+              <div className="flex items-center gap-[2px] h-5 flex-shrink-0 ml-1">
+                {analyzerData.slice(0, 5).map((val, i) => (
+                  <motion.div key={i} className="w-[2px] bg-accent rounded-full"
+                    animate={{ height: isPlaying ? `${Math.max(25, val * 100)}%` : '25%' }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 20 }} />
+                ))}
+              </div>
             </div>
             {/* Mini progress line */}
             <div className="mt-1 mx-2 h-[2px] bg-white/5 rounded-full overflow-hidden">

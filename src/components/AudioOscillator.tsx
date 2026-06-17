@@ -18,13 +18,15 @@ interface Particle {
 
 export default function AudioOscillator() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { isPlaying } = useAudio();
+  const { isPlaying, analyzerData } = useAudio();
   
   const isPlayingRef = useRef(isPlaying);
+  const analyzerDataRef = useRef(analyzerData);
 
   useEffect(() => {
     isPlayingRef.current = isPlaying;
-  }, [isPlaying]);
+    analyzerDataRef.current = analyzerData;
+  }, [isPlaying, analyzerData]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -82,9 +84,9 @@ export default function AudioOscillator() {
       currentMouseX += (mouseX - currentMouseX) * 0.05;
       currentMouseY += (mouseY - currentMouseY) * 0.05;
 
-      // Smooth audio power based purely on isPlaying — no Web Audio API
-      const targetPower = isPlayingRef.current ? 0.45 : 0;
-      audioSmooth += (targetPower - audioSmooth) * 0.04; 
+      // Smooth audio power
+      const currentPower = analyzerDataRef.current.reduce((a, b) => a + b, 0) / 8;
+      audioSmooth += (currentPower - audioSmooth) * 0.12; 
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 

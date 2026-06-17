@@ -71,9 +71,6 @@ export default function AudioEngine() {
     return () => {
       document.removeEventListener('mouseover', handleMouseOver);
       document.removeEventListener('mousedown', handleMouseDown);
-      if (audioCtx.state !== 'closed') {
-        audioCtx.close();
-      }
     };
   }, []);
 

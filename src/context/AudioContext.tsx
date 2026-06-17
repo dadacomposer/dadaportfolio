@@ -22,6 +22,7 @@ interface AudioContextType {
   prevTrack: () => void;
   pauseAudio: () => void;
   seek: (time: number) => void;
+  analyzerData: number[];
   firstTrack: any | null;
 }
 
@@ -38,16 +39,17 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-
+  const [analyzerData, setAnalyzerData] = useState<number[]>(new Array(8).fill(0));
+  
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyzerRef = useRef<AnalyserNode | null>(null);
+  const animationRef = useRef<number | null>(null);
 
   const tracksRef = useRef<any[]>([]);
   const currentIndexRef = useRef(-1);
   const previewStartRef = useRef<number>(0);
   const preloadedTrackRef = useRef<any>(null);
-  // Tracks whether we have already applied the initial seek for the current src
-  // Prevents handleLoadedMetadata from re-seeking on network rebuffer
-  const seekAppliedRef = useRef(false);
 
   useEffect(() => {
     async function loadTracks() {
@@ -76,13 +78,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           setTracks(visibleTracks);
           tracksRef.current = visibleTracks;
 
-          // Preload a featured track immediately so first play is instant
+          // Preload a random track immediately so first play is instant
           if (visibleTracks.length > 0 && audioRef.current) {
-            const featuredTitles = ["About To Happen", "Breathe Again", "Cloud Recesses"];
-            const featuredTracks = visibleTracks.filter(t => featuredTitles.includes(t.title));
-            const pool = featuredTracks.length > 0 ? featuredTracks : visibleTracks;
-            const randomIdx = Math.floor(Math.random() * pool.length);
-            const preloadTrack = pool[randomIdx];
+            const randomIdx = Math.floor(Math.random() * visibleTracks.length);
+            const preloadTrack = visibleTracks[randomIdx];
             preloadedTrackRef.current = preloadTrack;
             audioRef.current.src = preloadTrack.url;
             audioRef.current.preload = 'auto';
@@ -99,18 +98,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           }));
           setTracks(mappedStatic);
           tracksRef.current = mappedStatic;
-          
-          if (mappedStatic.length > 0 && audioRef.current) {
-            const featuredTitles = ["About To Happen", "Breathe Again", "Cloud Recesses"];
-            const featuredTracks = mappedStatic.filter(t => featuredTitles.includes(t.title));
-            const pool = featuredTracks.length > 0 ? featuredTracks : mappedStatic;
-            const randomIdx = Math.floor(Math.random() * pool.length);
-            const preloadTrack = pool[randomIdx];
-            preloadedTrackRef.current = preloadTrack;
-            audioRef.current.src = preloadTrack.url;
-            audioRef.current.preload = 'auto';
-            audioRef.current.load();
-          }
         });
       }
     }
@@ -125,6 +112,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     audioRef.current = new Audio();
     const audio = audioRef.current;
+    audio.crossOrigin = "anonymous";
     audio.loop = false;
     
     const updateProgress = () => {
@@ -147,26 +135,21 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       const isSharePage = typeof window !== 'undefined' && window.location.pathname.startsWith('/share/');
       
       audio.volume = 1;
-      setDuration(audio.duration);
-
-      // Only apply the initial seek ONCE per track load.
-      // If the browser rebuffers (network glitch, tab switch) it fires
-      // loadedmetadata again — without this guard it would re-jump to the
-      // preview point mid-playback, which was perceived as a pitch change.
-      if (seekAppliedRef.current) return;
-      seekAppliedRef.current = true;
-
+      let startPoint = 0;
       if (!isSharePage) {
-        let startPoint = 0;
+        // Calculate preview start point: either explicit preview_start, or 35% of duration
         if (previewStartRef.current > 0) {
           startPoint = previewStartRef.current;
         } else if (audio.duration) {
           startPoint = Math.floor(audio.duration * 0.35);
         }
-        if (startPoint > 0) {
-          audio.currentTime = startPoint;
-        }
       }
+
+      if (startPoint > 0) {
+        audio.currentTime = startPoint;
+      }
+      
+      setDuration(audio.duration);
     };
     
     audio.addEventListener('timeupdate', updateProgress);
@@ -177,12 +160,34 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       audio.removeEventListener('timeupdate', updateProgress);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   }, []);
 
   const firstTrack = tracks.length > 0 ? tracks[0] : null;
 
+  const setupVisualizer = () => {
+    if (!audioRef.current || analyzerRef.current) return;
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    const ctx = new AudioContextClass();
+    const analyzer = ctx.createAnalyser();
+    const source = ctx.createMediaElementSource(audioRef.current);
+    source.connect(analyzer);
+    analyzer.connect(ctx.destination);
+    analyzer.fftSize = 64;
+    analyzerRef.current = analyzer;
+    audioContextRef.current = ctx;
 
+    const dataArray = new Uint8Array(analyzer.frequencyBinCount);
+    const animate = () => {
+      if (analyzerRef.current) {
+        analyzerRef.current.getByteFrequencyData(dataArray);
+        setAnalyzerData(Array.from(dataArray.slice(0, 8)).map(v => v / 255));
+      }
+      animationRef.current = requestAnimationFrame(animate);
+    };
+    animate();
+  };
 
   const playTrack = (url: string, title: string, artwork?: string, previewStart?: number) => {
     if (!audioRef.current) return;
@@ -192,9 +197,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       previewStartRef.current = previewStart || 0;
       
       audioRef.current.volume = 1;
-
-      // Reset seek guard whenever we load a new track src
-      seekAppliedRef.current = false;
 
       // Only skip src reset if this exact URL is already in the preloaded buffer
       const alreadyPreloaded = preloadedTrackRef.current?.url === url;
@@ -224,6 +226,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       setIsIslandVisible(true);
       // Clear preloaded ref since we're now playing
       preloadedTrackRef.current = null;
+      setupVisualizer();
+      if (audioContextRef.current?.state === 'suspended') audioContextRef.current.resume();
     }
   };
   const togglePlay = () => {
@@ -242,6 +246,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       audioRef.current.volume = 1;
       audioRef.current.play().catch(e => console.log('Playback error:', e));
       setIsPlaying(true);
+      if (audioContextRef.current?.state === 'suspended') audioContextRef.current.resume();
     }
   };
 
@@ -286,7 +291,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     <AudioContext.Provider value={{ 
       isIslandVisible, setIsIslandVisible, isPlaying, setIsPlaying, currentTrackTitle,
       currentTrackUrl, currentTrackArtwork, progress, duration, currentTime, tracks, currentTrackIndex,
-      playTrack, playRandomTrack, togglePlay, nextTrack, prevTrack, pauseAudio, seek, firstTrack
+      playTrack, playRandomTrack, togglePlay, nextTrack, prevTrack, pauseAudio, seek, analyzerData, firstTrack
     }}>
       {children}
     </AudioContext.Provider>
