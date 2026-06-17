@@ -80,7 +80,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
           // Preload a featured track immediately so first play is instant
           if (visibleTracks.length > 0 && audioRef.current) {
-            const featuredTitles = ["About to Happen", "Breathe Again", "Cloud Recesses"];
+            const featuredTitles = ["About To Happen", "Breathe Again", "Cloud Recesses"];
             const featuredTracks = visibleTracks.filter(t => featuredTitles.includes(t.title));
             const pool = featuredTracks.length > 0 ? featuredTracks : visibleTracks;
             const randomIdx = Math.floor(Math.random() * pool.length);
@@ -103,7 +103,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           tracksRef.current = mappedStatic;
           
           if (mappedStatic.length > 0 && audioRef.current) {
-            const featuredTitles = ["About to Happen", "Breathe Again", "Cloud Recesses"];
+            const featuredTitles = ["About To Happen", "Breathe Again", "Cloud Recesses"];
             const featuredTracks = mappedStatic.filter(t => featuredTitles.includes(t.title));
             const pool = featuredTracks.length > 0 ? featuredTracks : mappedStatic;
             const randomIdx = Math.floor(Math.random() * pool.length);
