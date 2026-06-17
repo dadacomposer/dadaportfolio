@@ -78,10 +78,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           setTracks(visibleTracks);
           tracksRef.current = visibleTracks;
 
-          // Preload a random track immediately so first play is instant
+          // Preload a featured track immediately so first play is instant
           if (visibleTracks.length > 0 && audioRef.current) {
-            const randomIdx = Math.floor(Math.random() * visibleTracks.length);
-            const preloadTrack = visibleTracks[randomIdx];
+            const featuredTitles = ["About to Happen", "Breathe Again", "Cloud Recesses"];
+            const featuredTracks = visibleTracks.filter(t => featuredTitles.includes(t.title));
+            const pool = featuredTracks.length > 0 ? featuredTracks : visibleTracks;
+            const randomIdx = Math.floor(Math.random() * pool.length);
+            const preloadTrack = pool[randomIdx];
             preloadedTrackRef.current = preloadTrack;
             audioRef.current.src = preloadTrack.url;
             audioRef.current.preload = 'auto';
@@ -98,6 +101,18 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           }));
           setTracks(mappedStatic);
           tracksRef.current = mappedStatic;
+          
+          if (mappedStatic.length > 0 && audioRef.current) {
+            const featuredTitles = ["About to Happen", "Breathe Again", "Cloud Recesses"];
+            const featuredTracks = mappedStatic.filter(t => featuredTitles.includes(t.title));
+            const pool = featuredTracks.length > 0 ? featuredTracks : mappedStatic;
+            const randomIdx = Math.floor(Math.random() * pool.length);
+            const preloadTrack = pool[randomIdx];
+            preloadedTrackRef.current = preloadTrack;
+            audioRef.current.src = preloadTrack.url;
+            audioRef.current.preload = 'auto';
+            audioRef.current.load();
+          }
         });
       }
     }
