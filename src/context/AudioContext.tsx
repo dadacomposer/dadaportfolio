@@ -22,7 +22,6 @@ interface AudioContextType {
   prevTrack: () => void;
   pauseAudio: () => void;
   seek: (time: number) => void;
-  analyzerData: number[];
   firstTrack: any | null;
 }
 
@@ -39,12 +38,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [analyzerData, setAnalyzerData] = useState<number[]>(new Array(8).fill(0));
-  
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyzerRef = useRef<AnalyserNode | null>(null);
-  const animationRef = useRef<number | null>(null);
 
   const tracksRef = useRef<any[]>([]);
   const currentIndexRef = useRef(-1);
@@ -112,7 +106,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     audioRef.current = new Audio();
     const audio = audioRef.current;
-    audio.crossOrigin = "anonymous";
     audio.loop = false;
     
     const updateProgress = () => {
@@ -160,34 +153,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       audio.removeEventListener('timeupdate', updateProgress);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   }, []);
 
   const firstTrack = tracks.length > 0 ? tracks[0] : null;
-
-  const setupVisualizer = () => {
-    if (!audioRef.current || analyzerRef.current) return;
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    const ctx = new AudioContextClass();
-    const analyzer = ctx.createAnalyser();
-    const source = ctx.createMediaElementSource(audioRef.current);
-    source.connect(analyzer);
-    analyzer.connect(ctx.destination);
-    analyzer.fftSize = 64;
-    analyzerRef.current = analyzer;
-    audioContextRef.current = ctx;
-
-    const dataArray = new Uint8Array(analyzer.frequencyBinCount);
-    const animate = () => {
-      if (analyzerRef.current) {
-        analyzerRef.current.getByteFrequencyData(dataArray);
-        setAnalyzerData(Array.from(dataArray.slice(0, 8)).map(v => v / 255));
-      }
-      animationRef.current = requestAnimationFrame(animate);
-    };
-    animate();
-  };
 
   const playTrack = (url: string, title: string, artwork?: string, previewStart?: number) => {
     if (!audioRef.current) return;
@@ -226,8 +195,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       setIsIslandVisible(true);
       // Clear preloaded ref since we're now playing
       preloadedTrackRef.current = null;
-      setupVisualizer();
-      if (audioContextRef.current?.state === 'suspended') audioContextRef.current.resume();
     }
   };
   const togglePlay = () => {
@@ -246,7 +213,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       audioRef.current.volume = 1;
       audioRef.current.play().catch(e => console.log('Playback error:', e));
       setIsPlaying(true);
-      if (audioContextRef.current?.state === 'suspended') audioContextRef.current.resume();
     }
   };
 
@@ -291,7 +257,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     <AudioContext.Provider value={{ 
       isIslandVisible, setIsIslandVisible, isPlaying, setIsPlaying, currentTrackTitle,
       currentTrackUrl, currentTrackArtwork, progress, duration, currentTime, tracks, currentTrackIndex,
-      playTrack, playRandomTrack, togglePlay, nextTrack, prevTrack, pauseAudio, seek, analyzerData, firstTrack
+      playTrack, playRandomTrack, togglePlay, nextTrack, prevTrack, pauseAudio, seek, firstTrack
     }}>
       {children}
     </AudioContext.Provider>

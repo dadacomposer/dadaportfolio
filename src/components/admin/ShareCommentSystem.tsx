@@ -43,69 +43,13 @@ export default function ShareCommentSystem({
   const waveformRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
 
-  // Load and decode actual audio peaks using Web Audio API
-  const [peaks, setPeaks] = useState<number[]>(() => generateWaveform(track.title));
+  // Waveform is generated deterministically from the track title.
+  // We intentionally do NOT fetch+decode the audio file for peaks:
+  // doing so via OfflineAudioContext while the <audio> element is also
+  // streaming the same URL causes a CORS cache conflict in Chromium that
+  // disrupts the active audio pipeline and produces pitch artifacts.
+  const [peaks] = useState<number[]>(() => generateWaveform(track.title));
 
-  useEffect(() => {
-    let isCancelled = false;
-    
-    // Set fallback peaks immediately when track changes
-    setPeaks(generateWaveform(track.title));
-
-    const decodeAudio = async () => {
-      try {
-        const OfflineAudioCtx = window.OfflineAudioContext || (window as any).webkitOfflineAudioContext;
-        if (!OfflineAudioCtx) return;
-
-        // Fetch the audio track (CORS allowed by Cloudinary)
-        const res = await fetch(track.audio_url);
-        if (!res.ok) throw new Error('Fetch audio file failed');
-        const arrayBuffer = await res.arrayBuffer();
-
-        // Decode the audio data using a temporary OfflineAudioContext to bypass browser autoplay/gesture constraints
-        const tempCtx = new OfflineAudioCtx(1, 1, 44100);
-        const audioBuffer = await tempCtx.decodeAudioData(arrayBuffer);
-
-        if (isCancelled) return;
-
-        // Extract peaks from channel data
-        const channelData = audioBuffer.getChannelData(0);
-        const count = 50;
-        const step = Math.floor(channelData.length / count);
-        const calculatedPeaks: number[] = [];
-
-        for (let i = 0; i < count; i++) {
-          const start = i * step;
-          const end = start + step;
-          let max = 0;
-          for (let j = start; j < end; j++) {
-            const val = Math.abs(channelData[j]);
-            if (val > max) {
-              max = val;
-            }
-          }
-          calculatedPeaks.push(max);
-        }
-
-        const maxPeak = Math.max(...calculatedPeaks);
-        if (maxPeak > 0) {
-          const normalizedPeaks = calculatedPeaks.map(p => {
-            const normalized = (p / maxPeak) * 70; // 0 to 70 range
-            return Math.max(15, Math.round(15 + normalized)); // 15 to 85 range
-          });
-          setPeaks(normalizedPeaks);
-        }
-      } catch (err) {
-        console.warn('Could not decode audio peaks, keeping fallback:', err);
-      }
-    };
-
-    decodeAudio();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [track.audio_url, track.title]);
 
   const handleWaveformClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -499,27 +443,26 @@ export default function ShareCommentSystem({
             </button>
           </div>
 
-          {/* Waveform Scrubber */}
+          {/* Flat Seekable Progress Bar */}
           <div className="flex-grow w-full">
-            <div 
+            <div
               ref={waveformRef}
               onClick={handleWaveformClick}
-              className="h-11 flex items-end gap-[3px] cursor-pointer group/wave w-full py-1 relative select-none"
+              className="h-11 flex items-center cursor-pointer w-full relative select-none group/wave py-1"
             >
-              {peaks.map((height, i) => {
-                const progress = duration > 0 ? currentTime / duration : 0;
-                const isActive = progress >= i / 50;
-                return (
-                  <div
-                    key={i}
-                    style={{
-                      height: `${height}%`,
-                      backgroundColor: isActive ? 'rgb(var(--accent-rgb, 59, 130, 246))' : 'rgba(255, 255, 255, 0.2)',
-                    }}
-                    className="flex-grow rounded-sm transition-all duration-75"
-                  />
-                );
-              })}
+              {/* Track */}
+              <div className="w-full h-[3px] bg-white/10 rounded-full relative">
+                {/* Progress fill */}
+                <div
+                  className="absolute left-0 top-0 h-full bg-accent rounded-full transition-all duration-100"
+                  style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
+                />
+                {/* Scrubber thumb */}
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md opacity-0 group-hover/wave:opacity-100 transition-opacity -ml-1.5"
+                  style={{ left: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
+                />
+              </div>
             </div>
             <div className="flex justify-between text-[9px] font-mono text-white/40 uppercase tracking-widest mt-1">
               <span>{formatTime(currentTime)}</span>
@@ -544,8 +487,7 @@ export default function ShareCommentSystem({
         <audio 
           ref={audioRef} 
           src={track.audio_url} 
-          preload="auto"
-          crossOrigin="anonymous"
+          preload="metadata"
           onEnded={() => setIsPlaying(false)}
           onPause={() => setIsPlaying(false)}
           onPlay={() => setIsPlaying(true)}
