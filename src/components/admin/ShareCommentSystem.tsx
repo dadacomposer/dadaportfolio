@@ -544,7 +544,7 @@ export default function ShareCommentSystem({
         <audio 
           ref={audioRef} 
           src={track.audio_url} 
-          preload="auto"
+          preload="metadata"
           crossOrigin="anonymous"
           onEnded={() => setIsPlaying(false)}
           onPause={() => setIsPlaying(false)}
