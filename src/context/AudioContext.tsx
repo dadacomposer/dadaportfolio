@@ -22,7 +22,6 @@ interface AudioContextType {
   prevTrack: () => void;
   pauseAudio: () => void;
   seek: (time: number) => void;
-  analyzerData: number[];
   firstTrack: any | null;
 }
 
@@ -39,12 +38,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [analyzerData, setAnalyzerData] = useState<number[]>(new Array(8).fill(0));
-  
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyzerRef = useRef<AnalyserNode | null>(null);
-  const animationRef = useRef<number | null>(null);
 
   const tracksRef = useRef<any[]>([]);
   const currentIndexRef = useRef(-1);
@@ -130,7 +125,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     audioRef.current = new Audio();
     const audio = audioRef.current;
-    audio.crossOrigin = "anonymous";
     audio.loop = false;
     
     const updateProgress = () => {
@@ -183,57 +177,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       audio.removeEventListener('timeupdate', updateProgress);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   }, []);
 
   const firstTrack = tracks.length > 0 ? tracks[0] : null;
 
-  const setupVisualizer = () => {
-    if (!audioRef.current || analyzerRef.current) return;
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    const ctx = new AudioContextClass();
 
-    // CRITICAL FIX: Do NOT use createMediaElementSource(audioRef.current).
-    // Connecting the <audio> element to a Web Audio graph causes Chromium to
-    // synchronize two independent clocks (the media element clock and the
-    // AudioContext clock). When the system sample rate differs from the file
-    // sample rate (e.g. 48kHz system vs 44.1kHz file) Chromium's resampler
-    // drifts and causes random pitch warbling — a known Chromium bug #40160849.
-    //
-    // Instead: drive the analyser with a near-silent oscillator.
-    // The bars in the UI still react to isPlaying state via the analyzerData
-    // state (filled with synthesized values) without touching the audio pipeline.
-    const analyzer = ctx.createAnalyser();
-    analyzer.fftSize = 64;
-
-    // Silent constant-source keeps the AudioContext "running" without routing
-    // the music element through it.
-    const silentSource = ctx.createConstantSource();
-    const silentGain = ctx.createGain();
-    silentGain.gain.value = 0; // completely silent
-    silentSource.connect(silentGain);
-    silentGain.connect(analyzer);
-    analyzer.connect(ctx.destination);
-    silentSource.start();
-
-    analyzerRef.current = analyzer;
-    audioContextRef.current = ctx;
-
-    let frame = 0;
-    const animate = () => {
-      frame++;
-      // Generate pseudo-random animated bar data without touching the audio pipeline.
-      // Bars cycle with slight phase offsets to look like a real visualizer.
-      const synth = Array.from({ length: 8 }, (_, i) => {
-        const phase = (frame * 0.04 + i * 0.7);
-        return Math.abs(Math.sin(phase) * 0.6 + Math.sin(phase * 1.7 + i) * 0.4) * 0.7;
-      });
-      setAnalyzerData(synth);
-      animationRef.current = requestAnimationFrame(animate);
-    };
-    animate();
-  };
 
   const playTrack = (url: string, title: string, artwork?: string, previewStart?: number) => {
     if (!audioRef.current) return;
@@ -275,8 +224,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       setIsIslandVisible(true);
       // Clear preloaded ref since we're now playing
       preloadedTrackRef.current = null;
-      setupVisualizer();
-      if (audioContextRef.current?.state === 'suspended') audioContextRef.current.resume();
     }
   };
   const togglePlay = () => {
@@ -295,7 +242,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       audioRef.current.volume = 1;
       audioRef.current.play().catch(e => console.log('Playback error:', e));
       setIsPlaying(true);
-      if (audioContextRef.current?.state === 'suspended') audioContextRef.current.resume();
     }
   };
 
@@ -340,7 +286,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     <AudioContext.Provider value={{ 
       isIslandVisible, setIsIslandVisible, isPlaying, setIsPlaying, currentTrackTitle,
       currentTrackUrl, currentTrackArtwork, progress, duration, currentTime, tracks, currentTrackIndex,
-      playTrack, playRandomTrack, togglePlay, nextTrack, prevTrack, pauseAudio, seek, analyzerData, firstTrack
+      playTrack, playRandomTrack, togglePlay, nextTrack, prevTrack, pauseAudio, seek, firstTrack
     }}>
       {children}
     </AudioContext.Provider>
