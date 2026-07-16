@@ -389,9 +389,10 @@ export default function ShareCommentSystem({
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/cover:opacity-100 transition-opacity">
               <button 
                 onClick={togglePlay}
+                aria-label={isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
                 className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform shadow-lg"
               >
-                {isPlaying ? <Pause size={18} className="fill-black" /> : <Play size={18} className="ml-0.5 fill-black" />}
+                {isPlaying ? <Pause size={18} className="fill-black" aria-hidden="true" /> : <Play size={18} className="ml-0.5 fill-black" aria-hidden="true" />}
               </button>
             </div>
           </div>
@@ -437,9 +438,9 @@ export default function ShareCommentSystem({
             <button
               onClick={handleStop}
               className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/15 text-white flex items-center justify-center transition-all hover:scale-105 border border-white/5 cursor-pointer"
-              title="Stop"
+              aria-label="Stop"
             >
-              <Square size={16} className="fill-white" />
+              <Square size={16} className="fill-white" aria-hidden="true" />
             </button>
           </div>
 
@@ -463,6 +464,18 @@ export default function ShareCommentSystem({
                   style={{ left: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
                 />
               </div>
+              {/* Accessible range input overlay */}
+              <input
+                type="range"
+                min="0"
+                max={duration || 100}
+                value={currentTime}
+                step="0.1"
+                aria-label="Seek position"
+                aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
+                onChange={(e) => { if (audioRef.current) { audioRef.current.currentTime = parseFloat(e.target.value); setCurrentTime(parseFloat(e.target.value)); } }}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
             </div>
             <div className="flex justify-between text-[9px] font-mono text-white/40 uppercase tracking-widest mt-1">
               <span>{formatTime(currentTime)}</span>
@@ -501,18 +514,20 @@ export default function ShareCommentSystem({
           {/* Musicvine Metadata Grid (Collapsible) */}
           <div className="bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm overflow-hidden transition-all duration-300">
             <button
+              aria-expanded={isMetadataExpanded}
+              aria-controls="track-metadata-panel"
               onClick={() => setIsMetadataExpanded(!isMetadataExpanded)}
-              className="w-full flex items-center justify-between p-5 text-left hover:bg-white/5 transition-colors focus:outline-none"
+              className="w-full flex items-center justify-between p-5 text-left hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset"
             >
               <h4 className="text-xs uppercase tracking-widest text-accent font-bold">Music Vine Track Metadata</h4>
               <div className="flex items-center gap-2 text-[10px] text-white/40 uppercase tracking-widest font-mono font-bold">
                 <span>{isMetadataExpanded ? 'Hide Info' : 'Show Info'}</span>
-                {isMetadataExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                {isMetadataExpanded ? <ChevronUp size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />}
               </div>
             </button>
             
             {isMetadataExpanded && (
-              <div className="px-5 pb-5 pt-1 border-t border-white/5 space-y-4">
+              <div id="track-metadata-panel" className="px-5 pb-5 pt-1 border-t border-white/5 space-y-4">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-black/30 p-3 rounded-xl border border-white/5">
                     <span className="block text-[10px] uppercase tracking-wider text-white/40">1. Full Name</span>
@@ -552,9 +567,9 @@ export default function ShareCommentSystem({
                           showToast('Keywords copied to clipboard!', 'success');
                         }}
                         className="p-1 rounded bg-white/5 hover:bg-white/15 transition-all text-white/60 hover:text-white"
-                        title="Copy keywords as comma-separated text"
+                        aria-label="Copy keywords to clipboard"
                       >
-                        <Copy size={12} />
+                        <Copy size={12} aria-hidden="true" />
                       </button>
                     </div>
                     <div className="flex flex-wrap gap-1.5 mt-1">
@@ -576,7 +591,7 @@ export default function ShareCommentSystem({
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <label className="block text-xs uppercase tracking-widest text-accent font-bold">
+              <label htmlFor={`feedback-${track.id}`} className="block text-xs uppercase tracking-widest text-accent font-bold">
                 Feedback / Review Notes
               </label>
               {saved && (
@@ -612,6 +627,7 @@ export default function ShareCommentSystem({
 
             <div className="relative">
               <textarea 
+                id={`feedback-${track.id}`}
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Leave comments, concerns or revision requests here..."
@@ -625,19 +641,22 @@ export default function ShareCommentSystem({
                 <button 
                   onClick={saveComment}
                   disabled={!comment.trim() || saving}
+                  aria-busy={saving}
                   className="flex-grow sm:flex-grow-0 bg-accent text-white font-bold px-5 py-3 rounded-full text-[10px] md:text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-accent/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg cursor-pointer"
                 >
-                  {saving ? <Loader2 className="animate-spin" size={12} /> : <Send size={12} />}
-                  {saved ? 'Feedback Sent ✓' : 'Send Feedback'}
+                  {saving
+                    ? <><Loader2 className="animate-spin" size={12} aria-hidden="true" /><span>Sending...</span></>
+                    : <><Send size={12} aria-hidden="true" /><span>{saved ? 'Feedback Sent ✓' : 'Send Feedback'}</span></>}
                 </button>
+                <div role="status" aria-live="polite" className="sr-only">{saved ? 'Feedback sent successfully' : ''}</div>
 
                 {index === 0 && (
                   <button 
                     onClick={copyAllFeedback}
                     className="flex items-center justify-center w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 transition-colors border border-white/10 shrink-0 cursor-pointer text-white"
-                    title="Copy All Feedback to Clipboard"
+                    aria-label="Copy all feedback to clipboard"
                   >
-                    <Copy size={16} className="text-white/80" />
+                    <Copy size={16} className="text-white/80" aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -669,9 +688,9 @@ export default function ShareCommentSystem({
                 <button
                   onClick={copyZipLink}
                   className="flex items-center justify-center w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 transition-colors border border-white/10 text-white shrink-0 cursor-pointer"
-                  title="Copy Direct ZIP Download Link"
+                  aria-label="Copy direct ZIP download link"
                 >
-                  <LinkIcon size={16} />
+                  <LinkIcon size={16} aria-hidden="true" />
                 </button>
               </div>
             </div>

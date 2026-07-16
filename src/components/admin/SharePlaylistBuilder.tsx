@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Link as LinkIcon, Download, Eye, Music, Loader2, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -21,6 +21,15 @@ export default function SharePlaylistBuilder({
   const [creating, setCreating] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
   const { showToast } = useToast();
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   const handleCreate = async () => {
     if (!title) {
@@ -99,12 +108,15 @@ export default function SharePlaylistBuilder({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             className="bg-deepblack border border-white/10 rounded-3xl p-8 max-w-md w-full relative"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sharebuilder-modal-title"
           >
-            <button onClick={onClose} className="absolute top-6 right-6 text-white/50 hover:text-white">
-              <X size={24} />
+            <button onClick={onClose} className="absolute top-6 right-6 text-white/50 hover:text-white" aria-label="Close modal">
+              <X size={24} aria-hidden="true" />
             </button>
 
-            <h2 className="text-2xl font-bold uppercase tracking-tighter mb-8">Share {selectedTracks.length} Tracks</h2>
+            <h2 id="sharebuilder-modal-title" className="text-2xl font-bold uppercase tracking-tighter mb-8">Share {selectedTracks.length} Tracks</h2>
 
             {generatedLink ? (
               <div className="space-y-6 flex flex-col items-center text-center">
@@ -123,8 +135,9 @@ export default function SharePlaylistBuilder({
             ) : (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">Playlist Title / Client Name</label>
+                  <label htmlFor="playlist-title" className="block text-xs uppercase tracking-widest text-white/50 mb-2">Playlist Title / Client Name</label>
                   <input 
+                    id="playlist-title"
                     type="text" 
                     value={title}
                     onChange={e => setTitle(e.target.value)}
@@ -134,13 +147,15 @@ export default function SharePlaylistBuilder({
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-white/50 mb-4">Permission Level</label>
-                  <div className="space-y-2">
+                  <span id="permission-label" className="block text-xs uppercase tracking-widest text-white/50 mb-4">Permission Level</span>
+                  <div role="radiogroup" aria-labelledby="permission-label" className="space-y-2">
                     <button 
                       onClick={() => setPermission('view')}
+                      role="radio"
+                      aria-checked={permission === 'view'}
                       className={`w-full flex items-center p-4 rounded-xl border transition-all ${permission === 'view' ? 'border-white bg-white/10' : 'border-white/10 bg-transparent hover:bg-white/5'}`}
                     >
-                      <Eye className="mr-4 text-white/50" />
+                      <Eye className="mr-4 text-white/50" aria-hidden="true" />
                       <div className="text-left">
                         <div className="font-bold">View Only</div>
                         <div className="text-xs text-white/50">Listen only. No downloads, no comments.</div>
@@ -149,9 +164,11 @@ export default function SharePlaylistBuilder({
 
                     <button 
                       onClick={() => setPermission('download')}
+                      role="radio"
+                      aria-checked={permission === 'download'}
                       className={`w-full flex items-center p-4 rounded-xl border transition-all ${permission === 'download' ? 'border-white bg-white/10' : 'border-white/10 bg-transparent hover:bg-white/5'}`}
                     >
-                      <Download className="mr-4 text-white/50" />
+                      <Download className="mr-4 text-white/50" aria-hidden="true" />
                       <div className="text-left">
                         <div className="font-bold">Allow Downloads</div>
                         <div className="text-xs text-white/50">Listen and download original files.</div>
@@ -160,9 +177,11 @@ export default function SharePlaylistBuilder({
 
                     <button 
                       onClick={() => setPermission('musicvine')}
+                      role="radio"
+                      aria-checked={permission === 'musicvine'}
                       className={`w-full flex items-center p-4 rounded-xl border transition-all ${permission === 'musicvine' ? 'border-accent bg-accent/10' : 'border-white/10 bg-transparent hover:bg-white/5'}`}
                     >
-                      <Music className="mr-4 text-white/50" />
+                      <Music className="mr-4 text-white/50" aria-hidden="true" />
                       <div className="text-left">
                         <div className="font-bold text-accent">Musicvine Mode</div>
                         <div className="text-xs text-white/50">Lia can listen and write feedback comments.</div>
@@ -174,9 +193,11 @@ export default function SharePlaylistBuilder({
                 <button 
                   onClick={handleCreate}
                   disabled={!title || creating}
+                  aria-busy={creating}
                   className="w-full bg-white text-black font-bold py-4 rounded-xl uppercase tracking-widest text-sm hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2 mt-4"
                 >
-                  {creating ? <Loader2 className="animate-spin" size={18} /> : 'Generate Link'}
+                  {creating && <Loader2 className="animate-spin" size={18} aria-hidden="true" />}
+                  {creating ? 'Creating...' : 'Generate Link'}
                 </button>
               </div>
             )}

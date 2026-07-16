@@ -396,6 +396,7 @@ export default function AdminDashboard() {
                           type="checkbox" 
                           checked={selectedTracks.includes(track.id)}
                           onChange={() => toggleSelection(track.id)}
+                          aria-label={`Select track: ${track.title}`}
                           className="w-4 h-4 accent-white bg-transparent border-white/20 cursor-pointer"
                         />
                       </td>
@@ -420,12 +421,12 @@ export default function AdminDashboard() {
                                 ? 'bg-accent/10 border-accent/40 text-accent'
                                 : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:border-white/20 hover:bg-white/10'
                             }`}
-                            title={isPlaying && currentTrackUrl === track.audio_url ? "Pause" : "Play"}
+                            aria-label={isPlaying && currentTrackUrl === track.audio_url ? `Pause ${track.title}` : `Play ${track.title}`}
                           >
                             {isPlaying && currentTrackUrl === track.audio_url ? (
-                              <Pause size={12} fill="currentColor" />
+                              <Pause size={12} fill="currentColor" aria-hidden="true" />
                             ) : (
-                              <Play size={12} fill="currentColor" className="ml-0.5" />
+                              <Play size={12} fill="currentColor" aria-hidden="true" className="ml-0.5" />
                             )}
                           </button>
                           <img 
@@ -449,7 +450,7 @@ export default function AdminDashboard() {
                           />
                           <div>
                             <div className="flex items-center gap-2">
-                              <div onClick={() => toggleSelection(track.id)} className="font-bold text-white hover:text-accent cursor-pointer transition-colors uppercase tracking-tight text-sm md:text-base">{track.title}</div>
+                              <div className="font-bold text-white uppercase tracking-tight text-sm md:text-base">{track.title}</div>
                               {track.is_hidden && (
                                 <span className="text-[9px] uppercase tracking-widest bg-red-950/40 text-red-400 border border-red-900/30 px-1.5 py-0.5 rounded-md font-medium shrink-0">Hidden</span>
                               )}
@@ -472,41 +473,41 @@ export default function AdminDashboard() {
                         {new Date(track.created_at).toLocaleDateString()}
                       </td>
                       <td className="p-6 text-right w-48 min-w-[192px]">
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end gap-3">
+                        <div className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex items-center justify-end gap-3">
                           <button 
                             onClick={() => toggleVisibility(track.id, track.is_hidden)} 
                             className={`transition-colors ${track.is_hidden ? 'text-red-400 hover:text-red-300' : 'text-white/40 hover:text-white'}`}
-                            title={track.is_hidden ? "Show in public library" : "Hide from public library"}
+                            aria-label={track.is_hidden ? "Show in public library" : "Hide from public library"}
                           >
-                            {track.is_hidden ? <EyeOff size={16} /> : <Eye size={16} />}
+                            {track.is_hidden ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                           </button>
                           <button 
                             onClick={() => handleQuickShareView(track)} 
                             className="text-white/40 hover:text-white transition-colors"
-                            title="Generate Public View-Only Link"
+                            aria-label="Generate public view-only link"
                           >
-                            <LinkIcon size={16} />
+                            <LinkIcon size={16} aria-hidden="true" />
                           </button>
                           <button 
                             onClick={() => handleQuickShareMusicvine(track)} 
                             className="text-white/40 hover:text-[#ff5a60] transition-colors"
-                            title="Generate Musicvine Review Link"
+                            aria-label="Generate Musicvine review link"
                           >
                             <MusicvineIcon size={16} />
                           </button>
                           <button 
                             onClick={() => { setEditingTrack(track); setIsEditOpen(true); }} 
                             className="text-white/40 hover:text-white transition-colors"
-                            title="Edit Metadata"
+                            aria-label="Edit metadata"
                           >
-                            <Edit2 size={16} />
+                            <Edit2 size={16} aria-hidden="true" />
                           </button>
                           <button 
                             onClick={() => handleDelete(track.id, track.cloudinary_id)} 
                             className="text-red-400 hover:text-red-300 transition-colors"
-                            title="Delete Track"
+                            aria-label="Delete track"
                           >
-                            <Trash2 size={16} />
+                            <Trash2 size={16} aria-hidden="true" />
                           </button>
                         </div>
                       </td>
@@ -526,26 +527,28 @@ export default function AdminDashboard() {
           <div className="space-y-8">
             <div className="bg-white/5 border border-white/10 rounded-3xl p-6 h-fit backdrop-blur-sm">
               <h2 className="text-xl font-bold uppercase tracking-tighter mb-6 flex items-center gap-2">
-                <MessageSquare size={20} className="text-accent" />
+                <MessageSquare size={20} className="text-accent" aria-hidden="true" />
                 Playlist Chat & Log
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" aria-hidden="true" />
+                <span className="sr-only">Live — real-time updates active</span>
               </h2>
 
               {/* Playlist Selector Dropdown */}
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-xs uppercase tracking-widest text-white/50">Select Shared Link / Playlist</label>
+                  <label htmlFor="playlist-select" className="block text-xs uppercase tracking-widest text-white/50">Select Shared Link / Playlist</label>
                   {activePlaylistId && (
                     <button
                       onClick={handleResetLog}
                       className="text-red-400 hover:text-red-300 text-[10px] uppercase tracking-wider font-bold transition-colors cursor-pointer"
-                      title="Clear all comments, reviews, and notifications for this playlist"
+                      aria-label="Clear all comments, reviews, and notifications for this playlist"
                     >
                       Reset Log
                     </button>
                   )}
                 </div>
                 <select
+                  id="playlist-select"
                   value={activePlaylistId}
                   onChange={(e) => setActivePlaylistId(e.target.value)}
                   className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-accent"
@@ -645,6 +648,7 @@ export default function AdminDashboard() {
                 <div className="p-3 border-t border-white/10 bg-black/20 flex gap-2">
                   <input
                     type="text"
+                    aria-label="Reply message to Lia"
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     onKeyDown={(e) => {
@@ -714,9 +718,9 @@ export default function AdminDashboard() {
                     <button
                       onClick={() => handleDeletePlaylist(pl.id)}
                       className="text-white/30 hover:text-red-400 p-1.5 rounded bg-white/5 hover:bg-white/10 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer shrink-0"
-                      title="Delete & Deactivate Link"
+                      aria-label="Delete and deactivate link"
                     >
-                      <Trash2 size={12} />
+                      <Trash2 size={12} aria-hidden="true" />
                     </button>
                   </div>
                 ))}

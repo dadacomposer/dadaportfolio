@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import JSZip from 'jszip';
 import NodeID3 from 'node-id3';
-import { WaveFile } from 'wavefile';
 
 export const dynamic = 'force-dynamic';
 
@@ -81,15 +80,8 @@ export async function GET(req: Request) {
         console.error('Failed to write MP3 ID3 tags during download:', err);
       }
     } else if (originalExt === 'wav') {
-      try {
-        const wav = new WaveFile(audioBuffer);
-        wav.setTag('INAM', track.title);
-        wav.setTag('IART', track.artist || 'DADA');
-        wav.setTag('IPRD', track.album || 'DADA Portfolio');
-        updatedBuffer = Buffer.from(wav.toBuffer());
-      } catch (err) {
-        console.error('Failed to write WAV tags during download:', err);
-      }
+      // Return original buffer without modifying via WaveFile to prevent corruption on macOS/CoreAudio
+      updatedBuffer = audioBuffer;
     }
 
     // 5. Prepare filenames

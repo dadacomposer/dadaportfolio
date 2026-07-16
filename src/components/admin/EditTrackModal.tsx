@@ -71,6 +71,15 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
     }
   }, [track, isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -238,12 +247,15 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             className="bg-deepblack border border-white/10 rounded-3xl p-8 max-w-md w-full relative"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-modal-title"
           >
-            <button onClick={onClose} className="absolute top-6 right-6 text-white/50 hover:text-white">
-              <X size={24} />
+            <button onClick={onClose} className="absolute top-6 right-6 text-white/50 hover:text-white" aria-label="Close modal">
+              <X size={24} aria-hidden="true" />
             </button>
 
-            <h2 className="text-2xl font-bold uppercase tracking-tighter mb-8">Edit Track File Metadata</h2>
+            <h2 id="edit-modal-title" className="text-2xl font-bold uppercase tracking-tighter mb-8">Edit Track File Metadata</h2>
 
             {success ? (
               <div className="flex flex-col items-center justify-center py-12 text-green-400">
@@ -253,8 +265,9 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">Track Title</label>
+                  <label htmlFor="edit-title" className="block text-xs uppercase tracking-widest text-white/50 mb-2">Track Title</label>
                   <input
+                    id="edit-title"
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
@@ -265,8 +278,9 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">Artist</label>
+                    <label htmlFor="edit-artist" className="block text-xs uppercase tracking-widest text-white/50 mb-2">Artist</label>
                     <input
+                      id="edit-artist"
                       type="text"
                       value={artist}
                       onChange={(e) => setArtist(e.target.value)}
@@ -275,8 +289,9 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
                     />
                   </div>
                   <div>
-                    <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">Album</label>
+                    <label htmlFor="edit-album" className="block text-xs uppercase tracking-widest text-white/50 mb-2">Album</label>
                     <input
+                      id="edit-album"
                       type="text"
                       value={album}
                       onChange={(e) => setAlbum(e.target.value)}
@@ -288,8 +303,9 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="col-span-1">
-                    <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">BPM</label>
+                    <label htmlFor="edit-bpm" className="block text-xs uppercase tracking-widest text-white/50 mb-2">BPM</label>
                     <input
+                      id="edit-bpm"
                       type="number"
                       value={bpm}
                       onChange={(e) => setBpm(e.target.value)}
@@ -298,8 +314,9 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
                     />
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">Tags / Keywords</label>
+                    <label htmlFor="edit-keywords" className="block text-xs uppercase tracking-widest text-white/50 mb-2">Tags / Keywords</label>
                     <input
+                      id="edit-keywords"
                       type="text"
                       value={keywords}
                       onChange={(e) => setKeywords(e.target.value)}
@@ -311,18 +328,18 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
 
                 <div>
                   <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">Replacement Audio File (Optional)</label>
-                  <div
-                    onClick={() => !analyzingAudio && audioFileInputRef.current?.click()}
+                  <label
+                    htmlFor="edit-audio-file"
                     className="border-2 border-dashed border-white/20 rounded-xl p-3 flex flex-col items-center justify-center cursor-pointer hover:border-white/50 hover:bg-white/5 transition-all text-xs"
                   >
                     {analyzingAudio ? (
                       <>
-                        <Loader2 className="animate-spin text-white/50 mb-1" size={16} />
+                        <Loader2 className="animate-spin text-white/50 mb-1" size={16} aria-hidden="true" />
                         <span className="text-white/70">Analyzing audio frequencies...</span>
                       </>
                     ) : (
                       <>
-                        <UploadCloud size={16} className="text-white/50 mb-1" />
+                        <UploadCloud size={16} className="text-white/50 mb-1" aria-hidden="true" />
                         <span className="text-white/70 truncate max-w-full">
                           {newAudioFile ? newAudioFile.name : "Click to replace track audio (MP3/WAV)"}
                         </span>
@@ -332,13 +349,14 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
                       </>
                     )}
                     <input
+                      id="edit-audio-file"
                       type="file"
                       ref={audioFileInputRef}
                       accept="audio/*"
                       onChange={handleAudioFileChange}
-                      className="hidden"
+                      className="sr-only"
                     />
-                  </div>
+                  </label>
                   {newAudioFile && (
                     <button
                       type="button"
@@ -354,7 +372,7 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">Artwork Image</label>
+                  <label htmlFor="edit-artwork-url" className="block text-xs uppercase tracking-widest text-white/50 mb-2">Artwork Image</label>
                   <div className="flex gap-4 items-center mb-2">
                     {artworkUrl ? (
                       <img
@@ -382,6 +400,7 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
                     )}
                     <div className="flex-grow">
                       <input
+                        id="edit-artwork-url"
                         type="text"
                         value={artworkUrl}
                         onChange={(e) => setArtworkUrl(e.target.value)}
@@ -391,37 +410,40 @@ export default function EditTrackModal({ isOpen, onClose, onSuccess, track }: Ed
                     </div>
                   </div>
                   
-                  <div
-                    onClick={() => !uploadingImage && imageInputRef.current?.click()}
+                  <label
+                    htmlFor="edit-artwork-file"
                     className="border-2 border-dashed border-white/20 rounded-xl p-3 flex items-center justify-center gap-2 cursor-pointer hover:border-white/50 hover:bg-white/5 transition-all text-xs"
                   >
                     {uploadingImage ? (
                       <>
-                        <Loader2 className="animate-spin text-white/50" size={14} />
+                        <Loader2 className="animate-spin text-white/50" size={14} aria-hidden="true" />
                         <span className="text-white/70">Uploading...</span>
                       </>
                     ) : (
                       <>
-                        <UploadCloud size={14} className="text-white/50" />
+                        <UploadCloud size={14} className="text-white/50" aria-hidden="true" />
                         <span className="text-white/70">Upload New Cover Image</span>
                       </>
                     )}
                     <input
+                      id="edit-artwork-file"
                       type="file"
                       ref={imageInputRef}
                       accept="image/*"
                       onChange={handleImageUpload}
-                      className="hidden"
+                      className="sr-only"
                     />
-                  </div>
+                  </label>
                 </div>
 
                 <button
                   onClick={handleSave}
                   disabled={!title || saving || uploadingImage || analyzingAudio}
+                  aria-busy={saving}
                   className="w-full bg-white text-black font-bold py-4 rounded-xl uppercase tracking-widest text-sm hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2 mt-4"
                 >
-                  {saving ? <Loader2 className="animate-spin" size={18} /> : 'Write tags to file & database'}
+                  {saving && <Loader2 className="animate-spin" size={18} aria-hidden="true" />}
+                  {saving ? 'Saving...' : 'Write tags to file & database'}
                 </button>
               </div>
             )}

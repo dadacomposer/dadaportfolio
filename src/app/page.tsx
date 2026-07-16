@@ -129,16 +129,16 @@ export default function Home() {
                       transition={{ duration: 0.2 }}
                       className="flex items-center justify-center gap-2 w-full"
                     >
-                      {!isPlaying && <Play className="w-4 h-4 shrink-0" fill="currentColor" />}
+                      {!isPlaying && <Play className="w-4 h-4 shrink-0" fill="currentColor" aria-hidden="true" />}
                       <span>{isPlaying ? "View Full Library" : "Tap to listen"}</span>
                       {!isPlaying && (
-                        <span
-                          onClick={handleShuffleClick}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleShuffleClick(e as any); }}
+                          aria-label="Shuffle: play random track"
                           className="ml-1.5 p-1 rounded-lg bg-black/10 hover:bg-black/20 transition-colors cursor-pointer shrink-0"
-                          title="Play random track"
                         >
-                          <Shuffle className="w-3.5 h-3.5" />
-                        </span>
+                          <Shuffle className="w-3.5 h-3.5" aria-hidden="true" />
+                        </button>
                       )}
                     </motion.span>
                   </AnimatePresence>
@@ -153,11 +153,11 @@ export default function Home() {
                     animate={{ opacity: 1, scale: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.8, x: -10 }}
                     transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+                    aria-label="Stop music"
                     onClick={(e) => { e.stopPropagation(); togglePlay(); }}
                     className="w-12 h-12 flex items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white hover:bg-white/10 hover:border-white/20 transition-all z-10 group cursor-pointer"
-                    title="Stop Music"
                   >
-                    <Square size={14} fill="currentColor" className="group-hover:scale-110 transition-transform" />
+                    <Square size={14} fill="currentColor" aria-hidden="true" className="group-hover:scale-110 transition-transform" />
                   </motion.button>
                 )}
               </AnimatePresence>
@@ -191,6 +191,11 @@ export default function Home() {
               width: max-content;
               animation: marquee 120s linear infinite;
               will-change: transform;
+            }
+            @media (prefers-reduced-motion: reduce) {
+              .animate-marquee {
+                animation: none;
+              }
             }
           `}</style>
 

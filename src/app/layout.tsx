@@ -10,6 +10,7 @@ import GlobalGrid from "@/components/GlobalGrid";
 import { ThemeProvider } from '@/components/ThemeProvider';
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import CookieBanner from "@/components/CookieBanner";
+import { MotionConfig } from "framer-motion";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -65,12 +66,14 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} forcedTheme="dark">
         <ToastProvider>
         <GlobalGrid />
+        <MotionConfig reducedMotion="user">
         <AudioProvider>
           <Navbar />
           <main className="flex-grow pt-24">{children}</main>
           <Footer />
           <DynamicIsland />
         </AudioProvider>
+        </MotionConfig>
         <CookieBanner />
         </ToastProvider>
         </ThemeProvider>

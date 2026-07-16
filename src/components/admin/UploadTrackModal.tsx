@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UploadCloud, CheckCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -13,6 +13,15 @@ export default function UploadTrackModal({ isOpen, onClose, onSuccess }: { isOpe
   const [success, setSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   const handleUpload = async () => {
     if (!file || !title) return;
@@ -128,12 +137,15 @@ export default function UploadTrackModal({ isOpen, onClose, onSuccess }: { isOpe
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             className="bg-deepblack border border-white/10 rounded-3xl p-8 max-w-md w-full relative"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="upload-modal-title"
           >
-            <button onClick={onClose} className="absolute top-6 right-6 text-white/50 hover:text-white">
-              <X size={24} />
+            <button onClick={onClose} className="absolute top-6 right-6 text-white/50 hover:text-white" aria-label="Close modal">
+              <X size={24} aria-hidden="true" />
             </button>
 
-            <h2 className="text-2xl font-bold uppercase tracking-tighter mb-8">Upload Track</h2>
+            <h2 id="upload-modal-title" className="text-2xl font-bold uppercase tracking-tighter mb-8">Upload Track</h2>
 
             {success ? (
               <div className="flex flex-col items-center justify-center py-12 text-green-400">
@@ -143,8 +155,9 @@ export default function UploadTrackModal({ isOpen, onClose, onSuccess }: { isOpe
             ) : (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-white/50 mb-2">Track Title</label>
+                  <label htmlFor="upload-title" className="block text-xs uppercase tracking-widest text-white/50 mb-2">Track Title</label>
                   <input 
+                    id="upload-title"
                     type="text" 
                     value={title}
                     onChange={e => setTitle(e.target.value)}
@@ -153,29 +166,32 @@ export default function UploadTrackModal({ isOpen, onClose, onSuccess }: { isOpe
                   />
                 </div>
 
-                <div 
-                  onClick={() => fileInputRef.current?.click()}
+                <label
+                  htmlFor="upload-file"
                   className="border-2 border-dashed border-white/20 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer hover:border-white/50 hover:bg-white/5 transition-all"
                 >
-                  <UploadCloud size={32} className="text-white/50 mb-4" />
+                  <UploadCloud size={32} className="text-white/50 mb-4" aria-hidden="true" />
                   <p className="text-sm text-white/70">
                     {file ? file.name : "Click to select MP3 or WAV"}
                   </p>
                   <input 
+                    id="upload-file"
                     type="file" 
                     ref={fileInputRef} 
                     accept="audio/*" 
                     onChange={e => e.target.files && setFile(e.target.files[0])}
-                    className="hidden" 
+                    className="sr-only" 
                   />
-                </div>
+                </label>
 
                 <button 
                   onClick={handleUpload}
                   disabled={!file || !title || uploading}
+                  aria-busy={uploading}
                   className="w-full bg-white text-black font-bold py-4 rounded-xl uppercase tracking-widest text-sm hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
                 >
-                  {uploading ? <Loader2 className="animate-spin" size={18} /> : 'Upload to Vault'}
+                  {uploading && <Loader2 className="animate-spin" size={18} aria-hidden="true" />}
+                  {uploading ? 'Uploading...' : 'Upload to Vault'}
                 </button>
               </div>
             )}

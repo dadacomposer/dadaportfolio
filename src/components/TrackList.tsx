@@ -35,6 +35,7 @@ export default function TrackList({ tracks }: { tracks: any[] }) {
               >
                 {/* Play Button - Restored to technical style */}
                 <button
+                  aria-label={isActive ? `Pause ${track.title}` : `Play ${track.title}`}
                   className={`w-10 h-10 flex items-center justify-center shrink-0 rounded-xl border transition-all ${
                     isActive 
                       ? 'bg-accent/10 border-accent/40 text-accent' 
@@ -43,8 +44,8 @@ export default function TrackList({ tracks }: { tracks: any[] }) {
                   onClick={() => isCurrent ? togglePlay() : playTrack(track.url, track.title, track.artwork, track.previewStart)}
                 >
                   {isActive 
-                    ? <Pause size={14} fill="currentColor" />
-                    : <Play size={14} fill="currentColor" className="ml-0.5" />
+                    ? <Pause size={14} fill="currentColor" aria-hidden="true" />
+                    : <Play size={14} fill="currentColor" aria-hidden="true" className="ml-0.5" />
                   }
                 </button>
 

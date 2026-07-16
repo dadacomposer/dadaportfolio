@@ -71,6 +71,8 @@ function DesktopIsland({ translateY }: { translateY: number }) {
                 <div className="flex-1 h-1 bg-white/10 relative rounded-full group">
                   <div className="absolute h-full bg-accent rounded-full pointer-events-none" style={{ width: `${progress}%` }} />
                   <input type="range" min="0" max={duration || 100} value={currentTime} step="0.1"
+                    aria-label="Seek position"
+                    aria-valuetext={`${fmt(currentTime)} of ${fmt(duration)}`}
                     onChange={e => seek(parseFloat(e.target.value))}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
                   <div className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
@@ -80,11 +82,11 @@ function DesktopIsland({ translateY }: { translateY: number }) {
               </div>
               {/* Controls */}
               <div className="flex items-center gap-5 shrink-0">
-                <button onClick={prevTrack} className="text-white/40 hover:text-white transition-colors"><SkipBack size={16} fill="currentColor" /></button>
-                <button onClick={togglePlay} className="w-9 h-9 rounded-full bg-white text-deepblack flex items-center justify-center hover:bg-accent hover:text-white transition-all shadow-lg">
-                  {isPlaying ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" className="ml-0.5" />}
+                <button onClick={prevTrack} aria-label="Previous track" className="text-white/40 hover:text-white transition-colors"><SkipBack size={16} fill="currentColor" aria-hidden="true" /></button>
+                <button onClick={togglePlay} aria-label={isPlaying ? 'Pause' : 'Play'} className="w-9 h-9 rounded-full bg-white text-deepblack flex items-center justify-center hover:bg-accent hover:text-white transition-all shadow-lg">
+                  {isPlaying ? <Pause size={16} fill="currentColor" aria-hidden="true" /> : <Play size={16} fill="currentColor" aria-hidden="true" className="ml-0.5" />}
                 </button>
-                <button onClick={nextTrack} className="text-white/40 hover:text-white transition-colors"><SkipForward size={16} fill="currentColor" /></button>
+                <button onClick={nextTrack} aria-label="Next track" className="text-white/40 hover:text-white transition-colors"><SkipForward size={16} fill="currentColor" aria-hidden="true" /></button>
               </div>
             </motion.div>
           )}
@@ -138,10 +140,11 @@ function MobileIsland({ translateY }: { translateY: number }) {
               </div>
               {/* Mini play/pause */}
               <button
+                aria-label={isPlaying ? 'Pause' : 'Play'}
                 onClick={e => { e.stopPropagation(); togglePlay(); }}
                 className="w-10 h-10 rounded-full bg-white text-deepblack flex items-center justify-center shadow-lg flex-shrink-0 active:scale-95 transition-transform"
               >
-                {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
+                {isPlaying ? <Pause size={18} fill="currentColor" aria-hidden="true" /> : <Play size={18} fill="currentColor" aria-hidden="true" className="ml-0.5" />}
               </button>
               {/* Waveform indicator */}
               <motion.div
@@ -168,12 +171,16 @@ function MobileIsland({ translateY }: { translateY: number }) {
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', stiffness: 280, damping: 32 }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Now playing"
+            onKeyDown={(e) => { if (e.key === 'Escape') setIsOpen(false); }}
             className="fixed inset-0 z-[200] flex flex-col bg-gradient-to-b from-[#111] to-deepblack"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 pt-12 pb-6">
-              <button onClick={() => setIsOpen(false)} className="text-white/60 active:text-white transition-colors p-2 -ml-2">
-                <ChevronDown size={28} />
+              <button onClick={() => setIsOpen(false)} aria-label="Close player" className="text-white/60 active:text-white transition-colors p-2 -ml-2">
+                <ChevronDown size={28} aria-hidden="true" />
               </button>
               <div className="text-center">
                 <p className="text-[9px] uppercase tracking-[0.3em] text-gray-500">Now Playing</p>
@@ -211,6 +218,8 @@ function MobileIsland({ translateY }: { translateY: number }) {
                 <div className="relative h-1.5 bg-white/10 rounded-full">
                   <div className="absolute h-full bg-white rounded-full pointer-events-none" style={{ width: `${progress}%` }} />
                   <input type="range" min="0" max={duration || 100} value={currentTime} step="0.1"
+                    aria-label="Seek position"
+                    aria-valuetext={`${fmt(currentTime)} of ${fmt(duration)}`}
                     onChange={e => seek(parseFloat(e.target.value))}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     style={{ touchAction: 'none' }} />
@@ -226,19 +235,20 @@ function MobileIsland({ translateY }: { translateY: number }) {
 
               {/* Playback Controls */}
               <div className="flex items-center justify-between px-2">
-                <button onClick={prevTrack} className="text-white/50 active:text-white transition-colors p-3">
-                  <SkipBack size={28} fill="currentColor" />
+                <button onClick={prevTrack} aria-label="Previous track" className="text-white/50 active:text-white transition-colors p-3">
+                  <SkipBack size={28} fill="currentColor" aria-hidden="true" />
                 </button>
                 <button
                   onClick={togglePlay}
+                  aria-label={isPlaying ? 'Pause' : 'Play'}
                   className="w-16 h-16 rounded-full bg-white text-deepblack flex items-center justify-center shadow-2xl active:scale-95 transition-transform"
                 >
                   {isPlaying
-                    ? <Pause size={28} fill="currentColor" />
-                    : <Play size={28} fill="currentColor" className="ml-1" />}
+                    ? <Pause size={28} fill="currentColor" aria-hidden="true" />
+                    : <Play size={28} fill="currentColor" aria-hidden="true" className="ml-1" />}
                 </button>
-                <button onClick={nextTrack} className="text-white/50 active:text-white transition-colors p-3">
-                  <SkipForward size={28} fill="currentColor" />
+                <button onClick={nextTrack} aria-label="Next track" className="text-white/50 active:text-white transition-colors p-3">
+                  <SkipForward size={28} fill="currentColor" aria-hidden="true" />
                 </button>
               </div>
             </div>
