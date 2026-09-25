@@ -1,14 +1,13 @@
 // ─── Upload audio da disco locale → Cloudinary → Sanity ──────────────────────
 // node upload-to-cloudinary.mjs
 
-import { createClient } from '@sanity/client';
 import { v2 as cloudinary } from 'cloudinary';
 import { readdir } from 'fs/promises';
 import path from 'path';
 
 const AUDIO_DIR = '/Users/dada/Downloads/DADA_collection_extracted/DADA - DADA collection';
 
-const SANITY_TOKEN = 'sk8bK9QbhItsFpbkl8KTVR1tMDy7dSZYbZUUrCiqqULtd45fgv3oRku4heJj1VSxGs7iy5PTHfdD7mPcz56HoLuNud9QuGGIpTD3tNUxLkDhBJlquZRRnrgvfJyGn4oGP1aVF2D5MltuwSuGA6c7FJ92uDqjq9lc0NMB4priukUEyXyeIKfA';
+const SANITY_TOKEN = undefined;
 
 cloudinary.config({
   cloud_name: 'dna1jd017',
@@ -16,13 +15,7 @@ cloudinary.config({
   api_secret: 'yiNei-Rqg9cJYvjPX9umf2VykR4',
 });
 
-const sanity = createClient({
-  projectId: '4o79sm04',
-  dataset: 'production',
-  apiVersion: '2023-05-03',
-  token: SANITY_TOKEN,
-  useCdn: false,
-});
+const sanity = null;
 
 // Estrae il titolo pulito dal nome file es: "01 - DADA - Falling Stars.mp3" → "Falling Stars"
 function extractTitle(filename) {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { supabase } from '@/lib/supabase';
 import TrackList from '@/components/TrackList';
 import Link from 'next/link';

@@ -1,7 +1,7 @@
 'use client';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { motion, useScroll, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/lib/supabase';
+import { videoProjects } from '@/data/projects';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ProjectCard from './ProjectCard';
 import ProjectIslandModal from './ProjectIslandModal';
@@ -86,27 +86,7 @@ function ProjectScroll({ projects, openModal, hideArrows }: { projects: any[], o
 export default function ProjectCarousel() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [projects, setProjects] = useState<any[]>([]);
-
-  useEffect(() => {
-    supabase.from('projects').select('*').order('year', { ascending: false }).then(({ data }) => {
-      if (!data) return;
-      // Remap the properties to match the frontend expectations originally set by Sanity
-      const mappedData = data.map(p => ({
-        ...p,
-        _id: p.id,
-        videoUrl: p.video_url,
-        coverImageUrl: p.thumbnail_url,
-        externalUrl: p.external_url
-      }));
-
-      // Robust sorting for Prada
-      const prada = mappedData.find((p: any) => p.title.toUpperCase().includes('PRADA'));
-      const others = mappedData.filter((p: any) => !p.title.toUpperCase().includes('PRADA'));
-      const sorted = prada ? [prada, ...others] : mappedData;
-      setProjects([...sorted, ...sorted, ...sorted]);
-    });
-  }, []);
+  const [projects] = useState<any[]>(() => [...videoProjects, ...videoProjects, ...videoProjects]);
 
   const openModal = (index: number) => {
     const originalLength = projects.length / 3;

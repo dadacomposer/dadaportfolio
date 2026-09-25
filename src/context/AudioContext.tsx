@@ -1,6 +1,6 @@
 'use client';
 import React, { createContext, useContext, useState, ReactNode, useRef, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { cloudinaryTracks } from '@/data/cloudinaryTracks';
 
 interface AudioContextType {
   isIslandVisible: boolean;
@@ -46,57 +46,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const preloadedTrackRef = useRef<any>(null);
 
   useEffect(() => {
-    async function loadTracks() {
-      try {
-        // Fetch all tracks from Supabase
-        const { data, error } = await supabase
-          .from('tracks')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        if (data) {
-          const mapped = data.map(t => ({
-            _id: t.id,
-            title: t.title,
-            url: t.audio_url,
-            artwork: t.artwork_url || `/artworks/${t.title}.jpg`,
-            previewStart: t.preview_start || 0,
-            is_hidden: t.is_hidden || false,
-            artist: t.artist,
-            album: t.album
-          }));
-
-          // Only show non-hidden tracks in the public player list
-          const visibleTracks = mapped.filter(t => !t.is_hidden);
-          setTracks(visibleTracks);
-          tracksRef.current = visibleTracks;
-
-          // Preload a random track immediately so first play is instant
-          if (visibleTracks.length > 0 && audioRef.current) {
-            const randomIdx = Math.floor(Math.random() * visibleTracks.length);
-            const preloadTrack = visibleTracks[randomIdx];
-            preloadedTrackRef.current = preloadTrack;
-            audioRef.current.src = preloadTrack.url;
-            audioRef.current.preload = 'auto';
-            audioRef.current.load();
-          }
-        }
-      } catch (err) {
-        console.error('Failed to fetch tracks in AudioContext:', err);
-        // Fallback to static cloudinaryTracks if fetch fails
-        import('@/data/cloudinaryTracks').then(({ cloudinaryTracks }) => {
-          const mappedStatic = cloudinaryTracks.map(t => ({
-            ...t,
-            is_hidden: false
-          }));
-          setTracks(mappedStatic);
-          tracksRef.current = mappedStatic;
-        });
-      }
-    }
-
-    loadTracks();
+    const availableTracks = cloudinaryTracks.map(track => ({ ...track, is_hidden: false }));
+    setTracks(availableTracks);
+    tracksRef.current = availableTracks;
   }, []);
 
   useEffect(() => {

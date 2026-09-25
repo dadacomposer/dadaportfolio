@@ -9,7 +9,6 @@
 //  1. Riempi le variabili in CONFIG qui sotto
 //  2. Esegui: node migrate-audio.mjs
 
-import { createClient } from '@sanity/client';
 import { v2 as cloudinary } from 'cloudinary';
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -20,7 +19,7 @@ const CONFIG = {
     projectId: '4o79sm04',
     dataset: 'production',
     apiVersion: '2023-05-03',
-    token: 'sk8bK9QbhItsFpbkl8KTVR1tMDy7dSZYbZUUrCiqqULtd45fgv3oRku4heJj1VSxGs7iy5PTHfdD7mPcz56HoLuNud9QuGGIpTD3tNUxLkDhBJlquZRRnrgvfJyGn4oGP1aVF2D5MltuwSuGA6c7FJ92uDqjq9lc0NMB4priukUEyXyeIKfA',
+    token: undefined,
   },
   cloudinary: {
     cloud_name: 'dna1jd017',
@@ -30,7 +29,7 @@ const CONFIG = {
 };
 // ──────────────────────────────────────────────────────────────────────────────
 
-const sanity = createClient({ ...CONFIG.sanity, useCdn: false });
+const sanity = null;
 
 cloudinary.config(CONFIG.cloudinary);
 

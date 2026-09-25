@@ -35,7 +35,7 @@ export default function PrivacyPage() {
             </p>
             <ul className="list-disc pl-5 space-y-2">
               <li>
-                <strong>Contact Inquiries:</strong> If you fill out the contact form, the details you submit (name, email, project details, budget, phone) are stored securely in our private database (Supabase) so that we can respond to your request.
+                <strong>Contact Inquiries:</strong> The contact form is currently unavailable while the website is being updated.
               </li>
               <li>
                 <strong>Google Analytics:</strong> We use Google Analytics (using cookies) to measure anonymous traffic data (e.g., page views, session length, device types) to optimize our portfolio website. Google Analytics is only loaded if you explicitly consent via our cookie banner.
@@ -60,7 +60,7 @@ export default function PrivacyPage() {
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-white uppercase tracking-tight">5. Data Retention & Security</h2>
             <p>
-              Form submissions are kept in our database until they are no longer needed for business contact purposes. We implement industry-standard security protocols through our database host to safeguard this information.
+              No contact-form submissions are collected while the website is under construction.
             </p>
           </section>
 

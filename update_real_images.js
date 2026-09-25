@@ -1,14 +1,7 @@
-const { createClient } = require('@sanity/client');
 const fs = require('fs');
 const path = require('path');
 
-const client = createClient({
-  projectId: '4o79sm04',
-  dataset: 'production',
-  apiVersion: '2023-05-03',
-  token: 'skA5f89HkcxZN6CNdHxsQAfI11kpmfbavKxq39wAnCjNIxTfctNPAn3gbHQi0nJSMQFhfFeiE4OssknPg7stn0ZpykwV8YdaHYlNlsvUONFHtf0Yd35NQxy58cKrdcT5eQPr6CPX3p8mYjaSRLBiA9tfGT69v66N4XrSYNV4Gcihn0BgXyn3',
-  useCdn: false,
-});
+const client = null;
 
 const artifactDir = '/Users/dada/.gemini/antigravity/brain/4c7ae52e-9909-4c87-ac2f-2f762450fed8';
 

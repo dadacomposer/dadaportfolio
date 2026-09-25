@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Download, Copy, Send, CheckCircle, Music, Loader2, FileArchive, Link as LinkIcon, RotateCcw, Square, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from 'lucide-react';

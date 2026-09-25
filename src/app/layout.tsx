@@ -19,11 +19,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://dadacomposer.com"),
-  title: {
-    default: "DADA | Audio Post-Production & Composer for Hire",
-    template: "%s | DADA.COMPOSER"
-  },
-  description: "High-end audio post-production, bespoke music scoring, sound design, and foley. Hire a professional composer to elevate your film, commercial, or media project.",
+  title: "DADA.COMPOSER | Under Construction",
+  description: "DADA.COMPOSER is being refreshed. Please check back soon.",
   keywords: ["composer for hire", "audio post-production", "sound design", "foley", "music scoring", "custom music", "media composer", "audio strategy", "film scoring"],
   authors: [{ name: "DADA" }],
   creator: "DADA",
@@ -41,11 +38,11 @@ export const metadata: Metadata = {
     description: "Bespoke music scoring and surgical sound design.",
   },
   robots: {
-    index: true,
-    follow: true,
+    index: false,
+    follow: false,
     googleBot: {
-      index: true,
-      follow: true,
+      index: false,
+      follow: false,
       'max-video-preview': -1,
       'max-image-preview': 'large',
       'max-snippet': -1,
