@@ -1,16 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import DynamicIsland from "@/components/DynamicIsland";
-import Footer from "@/components/Footer";
 import { AudioProvider } from "@/context/AudioContext";
 import { ToastProvider } from "@/context/ToastContext";
-import GlobalGrid from "@/components/GlobalGrid";
-import { ThemeProvider } from '@/components/ThemeProvider';
-import GoogleAnalytics from "@/components/GoogleAnalytics";
-import CookieBanner from "@/components/CookieBanner";
-import { MotionConfig } from "framer-motion";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -56,24 +48,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} scroll-smooth`}>
-      <body className="flex flex-col min-h-screen bg-deepblack text-white relative font-sans transition-colors duration-500">
-        <GoogleAnalytics />
-        
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} forcedTheme="dark">
+    <html lang="en" className={inter.variable}>
+      <body className="min-h-screen bg-deepblack font-sans text-white">
         <ToastProvider>
-        <GlobalGrid />
-        <MotionConfig reducedMotion="user">
-        <AudioProvider>
-          <Navbar />
-          <main className="flex-grow pt-24">{children}</main>
-          <Footer />
-          <DynamicIsland />
-        </AudioProvider>
-        </MotionConfig>
-        <CookieBanner />
+          <AudioProvider>
+            <main>{children}</main>
+          </AudioProvider>
         </ToastProvider>
-        </ThemeProvider>
       </body>
     </html>
   );
